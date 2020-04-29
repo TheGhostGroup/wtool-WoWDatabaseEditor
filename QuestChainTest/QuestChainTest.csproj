@@ -8,11 +8,12 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>QuestChainTest</RootNamespace>
     <AssemblyName>QuestChainTest</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -34,15 +35,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CommonServiceLocator, Version=2.0.3.0, Culture=neutral, PublicKeyToken=489b6accfaf20ef0, processorArchitecture=MSIL">
-      <HintPath>..\packages\CommonServiceLocator.2.0.3\lib\net45\CommonServiceLocator.dll</HintPath>
-    </Reference>
-    <Reference Include="Prism, Version=7.1.0.172, Culture=neutral, PublicKeyToken=40ee6c3a2184dc59, processorArchitecture=MSIL">
-      <HintPath>..\packages\Prism.Core.7.1.0.172-pre\lib\net45\Prism.dll</HintPath>
-    </Reference>
-    <Reference Include="Prism.Wpf, Version=7.1.0.172, Culture=neutral, PublicKeyToken=40ee6c3a2184dc59, processorArchitecture=MSIL">
-      <HintPath>..\packages\Prism.Wpf.7.1.0.172-pre\lib\net45\Prism.Wpf.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
@@ -95,7 +87,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -105,11 +96,11 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\WDE.Common\WDE.Common.csproj">
+    <ProjectReference Include="..\WoWDatabaseEditor.Common\WDE.Common\WDE.Common.csproj">
       <Project>{9d1a4e14-2fe1-403a-a042-ed7e49db0438}</Project>
       <Name>WDE.Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\WDE.Module\WDE.Module.csproj">
+    <ProjectReference Include="..\WoWDatabaseEditor.Common\WDE.Module\WDE.Module.csproj">
       <Project>{034d29b2-faaa-4fea-a77e-5532aa2b0fb1}</Project>
       <Name>WDE.Module</Name>
     </ProjectReference>
@@ -117,10 +108,15 @@
       <Project>{f9373e23-7e19-44d2-8ec9-e638ed1243aa}</Project>
       <Name>WDE.QuestChainEditor</Name>
     </ProjectReference>
-    <ProjectReference Include="..\WDE.TrinityMySqlDatabase\WDE.TrinityMySqlDatabase.csproj">
+    <ProjectReference Include="..\WoWDatabaseEditor.Common\WDE.TrinityMySqlDatabase\WDE.TrinityMySqlDatabase.csproj">
       <Project>{c6be1e01-cf2f-4fe5-a67c-ac783eb9d3f7}</Project>
       <Name>WDE.TrinityMySqlDatabase</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Prism.Wpf">
+      <Version>7.1.0.172-pre</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
