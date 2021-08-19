@@ -1,59 +1,101 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WDE.Module.Attributes;
-using WDE.Common.Database;
+﻿using WDE.Common.Database;
 using WDE.Common.DBC;
 using WDE.Common.Solution;
+using WDE.SmartScriptEditor.Models;
 
 namespace WDE.SmartScriptEditor.Providers
 {
-    [AutoRegister]
-    public class SmartScriptNameProvider : ISolutionNameProvider<SmartScriptSolutionItem>
+    public class SmartScriptNameProviderBase<T> : ISolutionNameProvider<T> where T : ISmartScriptSolutionItem
     {
         private readonly IDatabaseProvider database;
         private readonly ISpellStore spellStore;
 
-        public SmartScriptNameProvider(IDatabaseProvider database, ISpellStore spellStore)
+        public SmartScriptNameProviderBase(IDatabaseProvider database, ISpellStore spellStore)
         {
             this.database = database;
             this.spellStore = spellStore;
         }
 
-        public string GetName(SmartScriptSolutionItem item)
+        private string? TryGetName(int entryOrGuid, SmartScriptType type)
         {
-            var Entry = item.Entry;
+            uint? entry = 0;
+            switch (type)
+            {
+                case SmartScriptType.Creature:
+                    if (entryOrGuid < 0)
+                        entry = database.GetCreatureByGuid((uint)-entryOrGuid)?.Entry;
+                    else
+                        entry = (uint)entryOrGuid;
+                    
+                    if (entry.HasValue)
+                        return database.GetCreatureTemplate(entry.Value)?.Name;
+                    break;
+                case SmartScriptType.GameObject:
+                    if (entryOrGuid < 0)
+                        entry = database.GetGameObjectByGuid((uint)-entryOrGuid)?.Entry;
+                    else
+                        entry = (uint)entryOrGuid;
+                    
+                    if (entry.HasValue)
+                        return database.GetGameObjectTemplate(entry.Value)?.Name;
+                    break;
+                case SmartScriptType.Quest:
+                    return database.GetQuestTemplate((uint)entryOrGuid)?.Name;
+                case SmartScriptType.Aura:
+                case SmartScriptType.Spell:
+                    if (spellStore.HasSpell((uint) entryOrGuid))
+                        return spellStore.GetName((uint) entryOrGuid);
+                    break;
+                default:
+                    return null;
+            }
 
-            if (Entry > 0)
+            return null;
+        }
+        
+        public string GetName(T item)
+        {
+            var name = TryGetName(item.Entry, item.SmartType);
+            if (!string.IsNullOrEmpty(name))
+            {
+                if (item.Entry < 0 && (item.SmartType == SmartScriptType.Creature || item.SmartType == SmartScriptType.GameObject))
+                    return name + " with guid " + -item.Entry;
+                return name;
+            }
+            
+            int entry = item.Entry;
+
+            if (entry > 0)
             {
                 switch (item.SmartType)
                 {
                     case SmartScriptType.Creature:
-                        var cr = database.GetCreatureTemplate((uint)Entry);
-                        return cr == null || cr.Name == null ? "Creature " + Entry : cr.Name;
+                        return "Creature " + entry;
                     case SmartScriptType.GameObject:
-                        var g = database.GetGameObjectTemplate((uint)Entry);
-                        return g == null || g.Name == null ? "GameObject " + Entry : g.Name;
+                        return "GameObject " + entry;
                     case SmartScriptType.AreaTrigger:
-                        return "Areatrigger " + Entry;
+                        return "Clientside area trigger " + entry;
                     case SmartScriptType.Quest:
-                        var q = database.GetQuestTemplate((uint)Entry);
-                        return q == null || q.Name == null ? "Quest " + Entry : q.Name;
+                        return "Quest " + entry;
                     case SmartScriptType.Spell:
                     case SmartScriptType.Aura:
-                        if (spellStore.HasSpell((uint)Entry))
-                            return spellStore.GetName((uint)Entry);
-                        return (item.SmartType == SmartScriptType.Aura ? "Aura " : "Spell ") + Entry;
+                        return (item.SmartType == SmartScriptType.Aura ? "Aura " : "Spell ") + entry;
                     case SmartScriptType.TimedActionList:
-                        return "Timed list " + Entry;
-                    case SmartScriptType.Cinematic:
-                        return "Cinematic " + Entry;
+                        return "Timed list " + entry;
+                    case SmartScriptType.AreaTriggerEntity:
+                        return "Area trigger entity " + entry;
+                    case SmartScriptType.AreaTriggerEntityServerSide:
+                        return "Serverside area trigger entity " + entry;
                 }
             }
 
-            return "Guid " + Entry;
+            if (item.SmartType == SmartScriptType.Creature)
+                return "Creature with guid " + -entry;
+            
+            if (item.SmartType == SmartScriptType.GameObject)
+                return "GameObject with guid " + -entry;
+            
+            return "Guid " + -entry;
         }
     }
 }

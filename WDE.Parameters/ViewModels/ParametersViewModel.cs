@@ -1,47 +1,51 @@
-﻿
+﻿using System.Collections.ObjectModel;
+using System.Windows.Input;
+using Prism.Commands;
 using Prism.Mvvm;
-using System;
-using System.Collections.ObjectModel;
+using WDE.Common;
+using WDE.Module.Attributes;
 using WDE.Parameters.Models;
-using Prism.Ioc;
 
 namespace WDE.Parameters.ViewModels
 {
-    public class ParametersViewModel : BindableBase
+    [AutoRegister]
+    public class ParametersViewModel : BindableBase, IConfigurable
     {
-        private ParameterSpecModel _selected;
-        private bool _hasSelected = true;
+        private bool hasSelected = true;
+        private ParameterSpecModel selected;
 
-        public ObservableCollection<ParameterSpecModel> Parameters { get; } = new ObservableCollection<ParameterSpecModel>();
+        public ParametersViewModel(ParameterFactory factory)
+        {
+            foreach (string key in factory.GetKeys())
+                Parameters.Add(factory.GetDefinition(key));
+            if (Parameters.Count > 0)
+                Selected = Parameters[0];
+            
+            Save = new DelegateCommand(() => { });
+        }
+
+        public ObservableCollection<ParameterSpecModel> Parameters { get; } = new();
 
         public ParameterSpecModel Selected
         {
-            get { return _selected; }
-            set { SetProperty(ref _selected, value); }
+            get => selected;
+            set => SetProperty(ref selected, value);
         }
 
         public bool HasSelected
         {
-            get { return _hasSelected; }
-            set { SetProperty(ref _hasSelected, value); }
+            get => hasSelected;
+            set => SetProperty(ref hasSelected, value);
         }
 
-        public Action SaveAction { get; set; }
+        public ICommand Save { get; }
 
-        public ParametersViewModel(ParameterFactory factory)
-        {
-            SaveAction = Save;
-            
-            foreach (var key in factory.GetKeys())
-            {
-                Parameters.Add(factory.GetDefinition(key));
-            }
-            if (Parameters.Count > 0)
-                Selected = Parameters[0];
-        }
+        public string Name => "Parameters browser";
+        public string? ShortDescription => null;
 
-        private void Save()
-        {
-        }
+        public bool IsModified => false;
+
+        public bool IsRestartRequired => false;
+        public ConfigurableGroup Group => ConfigurableGroup.Advanced;
     }
 }

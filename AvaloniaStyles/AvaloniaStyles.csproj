@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net5.0</TargetFramework>
+        <Configurations>Debug;Release</Configurations>
+        <Platforms>AnyCPU</Platforms>
+        <Nullable>enable</Nullable>
+        <WarningsAsErrors>nullable</WarningsAsErrors>
+    </PropertyGroup>
+    <PropertyGroup>
+        <OutputPath>..\bin\$(Configuration)\</OutputPath>
+    </PropertyGroup>
+    
+    <Import Project="..\Avalonia.props" />
+    <ItemGroup>
+        <PackageReference Include="Avalonia.Controls.DataGrid" Version="$(AvaloniaVersion)" />
+        <PackageReference Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
+    </ItemGroup>
+    <ItemGroup>
+      <AvaloniaResource Include="Styles\Assets\Lato\*.ttf" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\AvaloniaEdit\src\AvaloniaEdit\AvaloniaEdit.csproj" />
+      <ProjectReference Include="..\Dock\src\Dock.Avalonia\Dock.Avalonia.csproj" />
+    </ItemGroup>
+</Project>

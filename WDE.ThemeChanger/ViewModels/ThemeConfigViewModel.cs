@@ -1,50 +1,61 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WDE.ThemeChanger.Providers;
+using System.Windows.Input;
+using Prism.Commands;
 using Prism.Mvvm;
-using System.Windows;
+using WDE.Common;
 using WDE.Common.Managers;
+using WDE.Module.Attributes;
+using WDE.ThemeChanger.Providers;
 
 namespace WDE.ThemeChanger.ViewModels
 {
-    public class ThemeConfigViewModel : BindableBase
+    [AutoRegister]
+    public class ThemeConfigViewModel : BindableBase, IConfigurable
     {
-        private readonly IThemeSettingsProvider settings;
-        private readonly IThemeManager themeManager;
-        public Action SaveAction { get; set; }
+        private Theme name;
+        private List<Theme> themes;
 
-        private Theme _name;
-        private List<Theme> _themes;
-
-        public Theme Name
+        public ThemeConfigViewModel(IThemeSettingsProvider settings, IThemeManager themeManager)
         {
-            get { return _name; }
-            set { SetProperty(ref _name, value); themeManager.SetTheme(value); }
+            name = themeManager.CurrentTheme;
+            themes = themeManager.Themes.ToList();
+
+            Save = new DelegateCommand(() =>
+            {
+                themeManager.SetTheme(ThemeName);
+                settings.UpdateSettings(ThemeName);
+                IsModified = false;
+            });
+        }
+
+        public Theme ThemeName
+        {
+            get => name;
+            set
+            {
+                IsModified = true;
+                SetProperty(ref name, value);
+            }
         }
 
         public List<Theme> Themes
         {
-            get { return _themes; }
-            set { SetProperty(ref _themes, value); }
+            get => themes;
+            set => SetProperty(ref themes, value);
         }
 
-        public ThemeConfigViewModel(IThemeSettingsProvider s, IThemeManager themeManager)
+        public ICommand Save { get; }
+        public string Name => "Appearance";
+        public string ShortDescription => null;
+        public bool IsRestartRequired => false;
+
+        private bool isModified;
+        public bool IsModified
         {
-            this.themeManager = themeManager;
-            SaveAction = Save;
-
-            _name = themeManager.CurrentTheme;
-            _themes = themeManager.Themes.ToList();
-
-            settings = s;
-        }
-
-        private void Save()
-        {
-            settings.UpdateSettings(Name);
+            get => isModified;
+            private set => SetProperty(ref isModified, value);
         }
     }
 }

@@ -1,0 +1,16 @@
+﻿using WDE.Common.Database;
+using WDE.Common.DBC;
+using WDE.Module.Attributes;
+using WDE.SmartScriptEditor;
+using WDE.SmartScriptEditor.Providers;
+
+namespace WDE.TrinitySmartScriptEditor.Providers
+{
+    [AutoRegisterToParentScopeAttribute]
+    public class SmartScriptNameProvider : SmartScriptNameProviderBase<SmartScriptSolutionItem>
+    {
+        public SmartScriptNameProvider(IDatabaseProvider database, ISpellStore spellStore) : base(database, spellStore)
+        {
+        }
+    }
+}

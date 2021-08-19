@@ -1,65 +1,117 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WDE.Module.Attributes;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using WDE.Common.Parameters;
+using WDE.Module.Attributes;
+using WDE.MVVM.Observable;
 using WDE.Parameters.Models;
 
 namespace WDE.Parameters
 {
-    [AutoRegister, SingleInstance]
+    [AutoRegister]
+    [SingleInstance]
     public class ParameterFactory : IParameterFactory
     {
-        private readonly Dictionary<string, ParameterSpecModel> _data = new Dictionary<string, ParameterSpecModel>();
-        private readonly Dictionary<string, Func<string, Parameter> > _dynamics = new Dictionary<string, Func<string, Parameter>>();
-
-        public Parameter Factory(string type, string name)
+        private readonly Dictionary<string, ParameterSpecModel> data = new();
+        private readonly Dictionary<string, IParameter<long>> parameters = new();
+        private readonly Dictionary<string, IParameter<string>> stringParameters = new();
+        
+        public IParameter<long> Factory(string type)
         {
-            return Factory(type, name, 0);
+            if (parameters.TryGetValue(type, out var parameter))
+                return parameter;
+            return Parameter.Instance;
         }
 
-        public Parameter Factory(string type, string name, int defaultValue)
+        public IParameter<string> FactoryString(string type)
         {
-            Parameter param;
+            if (stringParameters.TryGetValue(type, out var parameter))
+                return parameter;
+            return StringParameter.Instance;
+        }
 
-            if (_dynamics.ContainsKey(type))
-                param = _dynamics[type](name);
-            else if (_data.ContainsKey(type))
-            {
-                param = _data[type].IsFlag && _data[type].Values != null ? new FlagParameter(name) : new Parameter(name);
+        public bool IsRegisteredLong(string type)
+        {
+            return parameters.ContainsKey(type);
+        }
 
-                if (_data[type].Values != null)
-                    param.Items = _data[type].Values;
-                return param;
-            }
-            else
-                param = new Parameter(name);
+        public bool IsRegisteredString(string type)
+        {
+            return stringParameters.ContainsKey(type);
+        }
 
-            param.SetValue(defaultValue);
+        public void Register(string key, IParameter<long> parameter)
+        {
+            parameters.Add(key, parameter);
+            if (pendingObservables.TryGetValue(key, out var pending))
+                pending.Publish(parameter);
+            if (pendingLongObservables.TryGetValue(key, out var pending2))
+                pending2.Publish(parameter);
+            registration.OnNext(parameter);
+        }
 
-            return param;
+        public void Register(string key, IParameter<string> parameter)
+        {
+            stringParameters.Add(key, parameter);
+            if (pendingObservables.TryGetValue(key, out var pending))
+                pending.Publish(parameter);
+            if (pendingStringObservables.TryGetValue(key, out var pending2))
+                pending2.Publish(parameter);
+            registration.OnNext(parameter);
+        }
+
+        public IEnumerable<string> GetKeys() => data.Keys.Union(parameters.Keys);
+
+        public IObservable<IParameter> OnRegister(string key)
+        {
+            if (IsRegisteredLong(key))
+                return new SingleValuePublisher<IParameter>(Factory(key));
+            
+            if (IsRegisteredString(key))
+                return new SingleValuePublisher<IParameter>(FactoryString(key));
+
+            if (pendingObservables.TryGetValue(key, out var observable))
+                return observable;
+
+            return pendingObservables[key] = new();
         }
         
-        public void Add(string key, ParameterSpecModel model)
+        public IObservable<IParameter<long>> OnRegisterLong(string key)
         {
-            model.Key = key;
-            _data.Add(key, model);
-        }
+            if (IsRegisteredLong(key))
+                return new SingleValuePublisher<IParameter<long>>(Factory(key));
 
-        public IEnumerable<string> GetKeys()
-        {
-            return _data.Keys.Union(_dynamics.Keys);
+            if (pendingLongObservables.TryGetValue(key, out var observable))
+                return observable;
+
+            return pendingLongObservables[key] = new();
         }
         
+        public IObservable<IParameter<string>> OnRegisterString(string key)
+        {
+            if (IsRegisteredString(key))
+                return new SingleValuePublisher<IParameter<string>>(FactoryString(key));
+
+            if (pendingStringObservables.TryGetValue(key, out var observable))
+                return observable;
+
+            return pendingStringObservables[key] = new();
+        }
+
+        public IObservable<IParameter> OnRegister() => registration;
+
+        private readonly Subject<IParameter> registration = new();
+        private readonly Dictionary<string, OnDemandSingleValuePublisher<IParameter>> pendingObservables = new();
+        private readonly Dictionary<string, OnDemandSingleValuePublisher<IParameter<long>>> pendingLongObservables = new();
+        private readonly Dictionary<string, OnDemandSingleValuePublisher<IParameter<string>>> pendingStringObservables = new();
+
         public ParameterSpecModel GetDefinition(string key)
         {
-            if (_dynamics.ContainsKey(key))
+            if (parameters.TryGetValue(key, out var param))
             {
-                var param = _dynamics[key](key);
-                return new ParameterSpecModel()
+                return new ParameterSpecModel
                 {
                     IsFlag = param is FlagParameter,
                     Key = key,
@@ -67,13 +119,39 @@ namespace WDE.Parameters
                     Values = param.Items
                 };
             }
-            return _data[key];
+
+            return data[key];
+        }
+        
+        ////
+        public void RegisterCombined(string name, string param1, string param2,
+            Func<IParameter<long>, IParameter<long>, IParameter<long>> creator)
+        {
+            OnRegisterLong(param1).CombineLatest(OnRegisterLong(param2)).Subscribe(pair =>
+            {
+                Register(name, creator(pair.First, pair.Second));
+            });
         }
 
-        public void Register(string key, Func<string, Parameter> creator)
+        public void RegisterDepending(string name, string dependsOn, Func<IParameter<long>, IParameter<long>> creator)
         {
-            _dynamics.Add(key, creator);
+            OnRegisterLong(dependsOn).Subscribe(item =>
+            {
+                Register(name, creator(item));
+            });
+        }
+        
+        public void RegisterDepending(string name, string dependsOn, Func<IParameter<long>, IParameter<string>> creator)
+        {
+            OnRegisterLong(dependsOn).Subscribe(item =>
+            {
+                Register(name, creator(item));
+            });
+        }
+
+        public void Updated(IParameter parameter)
+        {
+            registration.OnNext(parameter);
         }
     }
-
 }

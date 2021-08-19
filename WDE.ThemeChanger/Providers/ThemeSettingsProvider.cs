@@ -1,46 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WDE.ThemeChanger.Data;
-using System.IO;
-using WDE.Module.Attributes;
-using System.Windows;
+﻿using System.IO;
 using Newtonsoft.Json;
 using WDE.Common.Managers;
+using WDE.Common.Services;
+using WDE.Module.Attributes;
+using WDE.ThemeChanger.Data;
 
 namespace WDE.ThemeChanger.Providers
 {
-    [AutoRegister, SingleInstance]
+    [AutoRegister]
+    [SingleInstance]
     public class ThemeSettingsProvider : IThemeSettingsProvider
     {
-        private ThemeSettings settings { get; set;  }
+        private readonly IUserSettings userSettings;
 
-        public ThemeSettings GetSettings() => settings;
-
-        public ThemeSettingsProvider()
+        public ThemeSettingsProvider(IUserSettings userSettings)
         {
-            settings = new ThemeSettings(null);
-            if (File.Exists("theme.json"))
-            {
-                JsonSerializer ser = new JsonSerializer() { TypeNameHandling = TypeNameHandling.Auto };
-                using (StreamReader re = new StreamReader("theme.json"))
-                {
-                    JsonTextReader reader = new JsonTextReader(re);
-                    settings = ser.Deserialize<ThemeSettings>(reader);
-                }
-            }
+            this.userSettings = userSettings;
+            Settings = userSettings.Get<ThemeSettings>();
+        }
+
+        private ThemeSettings Settings { get; set; }
+
+        public ThemeSettings GetSettings()
+        {
+            return Settings;
         }
 
         public void UpdateSettings(Theme theme)
         {
-            settings = new ThemeSettings(theme.Name);
-            JsonSerializer ser = new JsonSerializer() { TypeNameHandling = TypeNameHandling.Auto };
-            using (StreamWriter file = File.CreateText(@"theme.json"))
-            {
-                ser.Serialize(file, settings);
-            }
+            userSettings.Update(new ThemeSettings(theme.Name));
         }
     }
 }

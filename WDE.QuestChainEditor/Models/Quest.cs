@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace WDE.QuestChainEditor.Models
+﻿namespace WDE.QuestChainEditor.Models
 {
     public class Quest
     {
@@ -32,7 +25,7 @@ namespace WDE.QuestChainEditor.Models
             if (obj == null || !(obj is Quest))
                 return false;
 
-            return Id.Equals(((Quest)obj).Id);
+            return Id.Equals(((Quest) obj).Id);
         }
     }
 }

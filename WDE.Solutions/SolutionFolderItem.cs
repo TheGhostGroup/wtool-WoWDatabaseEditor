@@ -1,39 +1,49 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+using System.Text.Json.Serialization;
 using WDE.Common;
-using Prism.Ioc;
-using WDE.Common.Solution;
 
 namespace WDE.Solutions
 {
     public class SolutionFolderItem : ISolutionItem
     {
-        public string MyName { get; set; }
-
-        public bool IsContainer => true;
-
-        public ObservableCollection<ISolutionItem> Items => _items;
-
-        private ObservableCollection<ISolutionItem> _items;
-
+        public SolutionFolderItem(string name, IEnumerable<ISolutionItem> children)
+        {
+            MyName = name;
+            Items = new ObservableCollection<ISolutionItem>(children);
+        }
+        
         public SolutionFolderItem(string name)
         {
             MyName = name;
-            _items = new ObservableCollection<ISolutionItem>();
+            Items = new ObservableCollection<ISolutionItem>();
         }
+
+        public SolutionFolderItem()
+        {
+            MyName = "";
+            Items = new ObservableCollection<ISolutionItem>();
+        }
+
+        public string MyName { get; set; }
+
+        [JsonIgnore]
+        public bool IsContainer => true;
+
+        public ObservableCollection<ISolutionItem> Items { get; }
+
+        [JsonIgnore]
+        public string? ExtraId => null;
+
+        [JsonIgnore]
+        public bool IsExportable => true;
 
         public void AddItem(ISolutionItem item)
         {
-            _items.Add(item);
+            Items.Add(item);
         }
 
-        public string ExtraId => null;
-
-        public bool IsExportable => true;
+        public ISolutionItem Clone() => new SolutionFolderItem(MyName, Items.Select(i => i.Clone()));
     }
 }

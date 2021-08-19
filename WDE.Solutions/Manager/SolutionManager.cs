@@ -1,57 +1,81 @@
-﻿using System;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Newtonsoft.Json;
 using WDE.Common;
-using Prism.Ioc;
-using Prism.Events;
-using WDE.Common.Events;
+using WDE.Common.Parameters;
+using WDE.Common.Services;
 using WDE.Module.Attributes;
+using WDE.MVVM.Observable;
 
 namespace WDE.Solutions.Manager
 {
-    [AutoRegister, SingleInstance]
+    [AutoRegister]
+    [SingleInstance]
     public class SolutionManager : ISolutionManager
     {
-        private ObservableCollection<ISolutionItem> _items;
-        public ObservableCollection<ISolutionItem> Items => _items;
+        private readonly IUserSettings userSettings;
 
-        public SolutionManager(IEventAggregator eventAggregator)
+        public SolutionManager(IUserSettings userSettings, IParameterFactory parameterFactory)
         {
-            _items = new ObservableCollection<ISolutionItem>();
+            this.userSettings = userSettings;
+            Items = new ObservableCollection<ISolutionItem>();
 
             Initialize();
 
-            _items.CollectionChanged += ItemsOnCollectionChanged;
+            Items.CollectionChanged += ItemsOnCollectionChanged;
+            parameterFactory.OnRegister().SubscribeAction(_ =>
+            {
+                RefreshAll();
+            });
         }
 
-        private void ItemsOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
+        public event System.Action<ISolutionItem?>? RefreshRequest;
+        public ObservableCollection<ISolutionItem> Items { get; }
+
+        public void RefreshAll()
         {
-            var newItems = notifyCollectionChangedEventArgs.NewItems;
-            var oldItems = notifyCollectionChangedEventArgs.OldItems;
+            RefreshRequest?.Invoke(null);
+        }
+
+        public void Refresh(ISolutionItem item)
+        {
+            RefreshRequest?.Invoke(item);
+            Save();
+        }
+
+        public void Initialize()
+        {
+            var data = userSettings.Get<Data>();
+            
+            if (data.Items == null)
+                return;
+
+            foreach (var item in data.Items)
+            {
+                InitItem(item);
+                Items.Add(item);
+            }
+        }
+
+        private void ItemsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
+        {
+            IList? newItems = notifyCollectionChangedEventArgs.NewItems;
+            IList? oldItems = notifyCollectionChangedEventArgs.OldItems;
 
             if (newItems != null)
             {
-                foreach (var varitem in newItems)
+                foreach (ISolutionItem item in newItems)
                 {
-                    var item = varitem as ISolutionItem;
-
                     if (item.Items != null)
                         item.Items.CollectionChanged += ItemsOnCollectionChanged;
                 }
             }
+
             if (oldItems != null)
             {
-                foreach (var varitem in oldItems)
+                foreach (ISolutionItem item in oldItems)
                 {
-                    var item = varitem as ISolutionItem;
-
                     if (item.Items != null)
                         item.Items.CollectionChanged -= ItemsOnCollectionChanged;
                 }
@@ -62,43 +86,29 @@ namespace WDE.Solutions.Manager
 
         private void Save()
         {
-            JsonSerializer ser = new Newtonsoft.Json.JsonSerializer() { TypeNameHandling = TypeNameHandling.Auto };
-            using (StreamWriter file = File.CreateText(@"solutions.json"))
-            {
-                ser.Serialize(file, _items);
-            }
-        }
-
-        public void Initialize()
-        {
-            if (System.IO.File.Exists("solutions.json"))
-            {
-                JsonSerializer ser = new Newtonsoft.Json.JsonSerializer() {TypeNameHandling = TypeNameHandling.Auto};
-                using (StreamReader re = new StreamReader("solutions.json"))
-                {
-                    JsonTextReader reader = new JsonTextReader(re);
-                    ser.Deserialize<List<ISolutionItem>>(reader).ForEach((e) =>
-                    {
-                        InitItem(e);
-                        _items.Add(e);
-                    });
-                }
-            }
+            userSettings.Update<Data>(new Data(Items));
         }
 
         private void InitItem(ISolutionItem item)
         {
             if (item.Items != null)
                 item.Items.CollectionChanged += ItemsOnCollectionChanged;
-            //@todo fixme
-//            item.SetUnity(_container);
+
             if (item.Items != null)
             {
-                foreach (var iitem in item.Items)
-                {
+                foreach (ISolutionItem iitem in item.Items)
                     InitItem(iitem);
-                }
             }
+        }
+
+        private struct Data : ISettings
+        {
+            public Data(IList<ISolutionItem> items)
+            {
+                Items = items;
+            }
+
+            public IList<ISolutionItem> Items { get; set; }
         }
     }
 }

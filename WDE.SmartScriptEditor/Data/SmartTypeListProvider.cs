@@ -1,55 +1,61 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using WDE.SmartScriptEditor.Data;
-using WDE.SmartScriptEditor.Editor.ViewModels;
-using WDE.SmartScriptEditor.Editor.Views;
-using Prism.Ioc;
+using WDE.Common.Managers;
+using WDE.Conditions.Data;
 using WDE.Module.Attributes;
+using WDE.SmartScriptEditor.Editor.ViewModels;
 
 namespace WDE.SmartScriptEditor.Data
 {
+    [SingleInstance]
     [AutoRegister]
     public class SmartTypeListProvider : ISmartTypeListProvider
     {
+        private readonly IWindowManager windowManager;
         private readonly ISmartDataManager smartDataManager;
+        private readonly IConditionDataManager conditionDataManager;
 
-        public SmartTypeListProvider(ISmartDataManager smartDataManager)
+        public SmartTypeListProvider(IWindowManager windowManager, ISmartDataManager smartDataManager, IConditionDataManager conditionDataManager)
         {
+            this.windowManager = windowManager;
             this.smartDataManager = smartDataManager;
+            this.conditionDataManager = conditionDataManager;
         }
 
-        public int? Get(SmartType type, Func<SmartGenericJsonData, bool> predicate)
+        public async System.Threading.Tasks.Task<(int, bool)?> Get(SmartType type, Func<SmartGenericJsonData, bool> predicate, List<(int, string)>? customItems)
         {
-            var view = new SmartSelectView();
-            var model = new SmartSelectViewModel(GetFileNameFor(type), type, predicate, smartDataManager);
-            view.DataContext = model;
+            var title = GetTitleForType(type);
+            SmartSelectViewModel model = new(title, type, predicate, customItems, smartDataManager, conditionDataManager);
 
-            bool? res = view.ShowDialog();
-
-            if (res.HasValue && res.Value)
-                return model.SelectedItem.Id;
+            if (await windowManager.ShowDialog(model) && model.SelectedItem != null)
+            {
+                if (model.SelectedItem.CustomId.HasValue)
+                    return (model.SelectedItem.CustomId.Value, true);
+                return (model.SelectedItem.Id, false);
+            }
 
             return null;
         }
 
-        private string GetFileNameFor(SmartType type)
+        private string GetTitleForType(SmartType type)
         {
             switch (type)
             {
                 case SmartType.SmartEvent:
-                    return "events.txt";
+                    return "Pick event";
                 case SmartType.SmartAction:
-                    return "actions.txt";
+                    return "Pick action";
                 case SmartType.SmartTarget:
-                    return "targets.txt";
+                    return "Pick action target";
+                case SmartType.SmartCondition:
+                    return "Pick condition";
+                case SmartType.SmartConditionSource:
+                    return "Pick condition source";
                 case SmartType.SmartSource:
-                    return "targets.txt";
+                    return "Pick action source";
+                default:
+                    return "Pick";
             }
-            return null;
         }
     }
 }

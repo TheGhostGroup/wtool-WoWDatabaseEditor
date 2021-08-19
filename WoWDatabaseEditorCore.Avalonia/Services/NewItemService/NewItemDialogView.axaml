@@ -1,0 +1,56 @@
+﻿<UserControl x:Class="WoWDatabaseEditorCore.Avalonia.Services.NewItemService.NewItemDialogView"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:components="clr-namespace:WDE.Common.Avalonia.Components;assembly=WDE.Common.Avalonia"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:newItemService="clr-namespace:WoWDatabaseEditorCore.Services.NewItemService;assembly=WoWDatabaseEditorCore"
+             xmlns:newItemService1="clr-namespace:WoWDatabaseEditorCore.Avalonia.Services.NewItemService"
+             xmlns:controls="clr-namespace:AvaloniaStyles.Controls;assembly=AvaloniaStyles"
+             d:DataContext="{d:DesignInstance newItemService:NewItemDialogViewModel}"
+             Name="Root"
+             Margin="0,9,0,0">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="30" />
+        </Grid.RowDefinitions>
+        <controls:GroupingListBox Items="{Binding  ItemPrototypes}"
+                                 SelectedItem="{Binding SelectedPrototype}"
+                                 DoubleTapped="InputElement_OnDoubleTapped"
+                                 KeyDown="UIElement_OnKeyDown">
+            <controls:GroupingListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <components:WdeImage Image="{Binding Image}" Width="32" Margin="0,0,6,0" Grid.RowSpan="2" />
+                        <TextBlock Text="{Binding Name}" FontWeight="Bold" Grid.Column="1" />
+                        <TextBlock Text="{Binding Description}" TextWrapping="WrapWithOverflow" Grid.Column="1"
+                                   Grid.Row="1" />
+                    </Grid>
+                </DataTemplate>
+            </controls:GroupingListBox.ItemTemplate>
+        </controls:GroupingListBox>
+        <DockPanel IsEnabled="{Binding SelectedPrototype.RequiresName}" Grid.Row="2" LastChildFill="True" Margin="0,0,0,10">
+            <TextBlock VerticalAlignment="Center">Name:</TextBlock>
+            <TextBox Text="{Binding CustomName, Mode=TwoWay}" Margin="10,0,0,0" />
+        </DockPanel>
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="80" />
+            </Grid.ColumnDefinitions>
+            <Button Content="Cancel" Command="{Binding Cancel}" HorizontalAlignment="Stretch" />
+            <Button Grid.Column="2" Content="OK" Command="{Binding Accept}" HorizontalAlignment="Stretch"/>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,39 +1,37 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using WDE.Common;
+using WDE.Common.CoreVersion;
+using WDE.Common.Types;
 using WDE.Module.Attributes;
 
 namespace WDE.Solutions
 {
     [AutoRegister]
-    public class SolutionFolderItemProvider : ISolutionItemProvider
+    public class SolutionFolderItemProvider : INamedSolutionItemProvider
     {
-        public string GetName()
+        public bool IsCompatibleWithCore(ICoreVersion core) => true;
+
+        public string GetName() => "Folder";
+
+        public ImageUri GetImage() => new ("Icons/folder_big.png");
+
+        public string GetDescription() => "Container for solutions";
+        
+        public string GetGroupName() => "Other";
+
+        public bool IsContainer => true;
+
+        public Task<ISolutionItem?> CreateSolutionItem()
         {
-            return "Folder";
+            throw new Exception("You are not supposed to call this!");
         }
 
-        public ImageSource GetImage()
+        public Task<ISolutionItem?> CreateSolutionItem(string name)
         {
-            return new BitmapImage(new Uri($"/WDE.Solutions;component/Resources/folder.png", UriKind.Relative));
-        }
-
-        public string GetDescription()
-        {
-            return "Container for solutions";
-        }
-
-        public ISolutionItem CreateSolutionItem()
-        {
-            string input = Microsoft.VisualBasic.Interaction.InputBox("Put folder name", "New Folder", "My new folder", -1, -1);
-            if (!string.IsNullOrEmpty(input))
-                return new SolutionFolderItem(input);
-            return null;
+            if (!string.IsNullOrEmpty(name))
+                return Task.FromResult<ISolutionItem?>(new SolutionFolderItem(name));
+            return Task.FromResult<ISolutionItem?>(null);
         }
     }
 }

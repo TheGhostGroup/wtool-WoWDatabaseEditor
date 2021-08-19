@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net5.0</TargetFramework>
+        <Configurations>Debug;Release</Configurations>
+        <Platforms>AnyCPU</Platforms>
+        <ApplicationIcon>Icon.ico</ApplicationIcon>
+        <Nullable>enable</Nullable>
+        <WarningsAsErrors>nullable</WarningsAsErrors>
+    </PropertyGroup>
+    <PropertyGroup>
+        <OutputPath>..\bin\$(Configuration)\</OutputPath>
+    </PropertyGroup>
+    <ItemGroup>
+        <AvaloniaResource Include="Icon.png" />
+        <AvaloniaResource Include="IconSmall.png" />
+    </ItemGroup>
+    <Import Project="..\Avalonia.props" />
+    <ItemGroup>
+        <PackageReference Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
+        <PackageReference Include="Avalonia.Controls.DataGrid" Version="$(AvaloniaVersion)" />
+        <PackageReference Include="Prism.Core" Version="7.2.0.1422" />
+        <PackageReference Include="Prism.Unity.Avalonia" Version="7.2.0.1430" />
+        <PackageReference Include="SmartFormat.NET" Version="2.5.3" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\AvaloniaStyles\AvaloniaStyles.csproj" />
+        <ProjectReference Include="..\WDE.Common.Avalonia\WDE.Common.Avalonia.csproj" />
+        <ProjectReference Include="..\WoWDatabaseEditor.Common\WDE.Common\WDE.Common.csproj" />
+        <ProjectReference Include="..\WoWDatabaseEditor\WoWDatabaseEditorCore.csproj" />
+        <ProjectReference Include="..\Dock\src\Dock.Model\Dock.Model.csproj" />
+        <ProjectReference Include="..\Dock\src\Dock.Model.ReactiveUI\Dock.Model.ReactiveUI.csproj" />
+        <ProjectReference Include="..\Dock\src\Dock.Avalonia\Dock.Avalonia.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <Resource Include="Icon.ico" />
+    </ItemGroup>
+</Project>

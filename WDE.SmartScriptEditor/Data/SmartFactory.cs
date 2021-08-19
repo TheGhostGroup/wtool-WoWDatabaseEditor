@@ -1,93 +1,152 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 using WDE.Common.Database;
 using WDE.Common.Parameters;
+using WDE.Conditions.Data;
+using WDE.Module.Attributes;
 using WDE.SmartScriptEditor.Models;
-using Prism.Ioc;
+using WDE.SmartScriptEditor.Parameters;
 
 namespace WDE.SmartScriptEditor.Data
 {
-    [Module.Attributes.AutoRegister, Module.Attributes.SingleInstance]
+    [AutoRegister]
+    [SingleInstance]
     public class SmartFactory : ISmartFactory
     {
-        private readonly IParameterFactory _parameterFactory;
+        private readonly IParameterFactory parameterFactory;
         private readonly ISmartDataManager smartDataManager;
+        private readonly IConditionDataManager conditionDataManager;
 
-        public SmartFactory(IParameterFactory parameterFactory, ISmartDataManager smartDataManager)
+        public SmartFactory(IParameterFactory parameterFactory, 
+            ISmartDataManager smartDataManager, 
+            IDatabaseProvider databaseProvider,
+            IConditionDataManager conditionDataManager)
         {
-            _parameterFactory = parameterFactory;
+            this.parameterFactory = parameterFactory;
             this.smartDataManager = smartDataManager;
+            this.conditionDataManager = conditionDataManager;
+
+            if (!parameterFactory.IsRegisteredLong("StoredTargetParameter"))
+            {
+                parameterFactory.Register("CreatureSpawnKeyParameter", new CreatureSpawnKeyParameter(databaseProvider));
+                parameterFactory.Register("GameobjectSpawnKeyParameter", new GameObjectSpawnKeyParameter(databaseProvider));
+                parameterFactory.Register("StoredTargetParameter", new VariableContextualParameter(GlobalVariableType.StoredTarget, "storedTarget"));
+                parameterFactory.Register("DataVariableParameter", new VariableContextualParameter(GlobalVariableType.DataVariable, "data"));
+                parameterFactory.Register("TimedEventParameter", new VariableContextualParameter(GlobalVariableType.TimedEvent, "timedEvent"));
+                parameterFactory.Register("DoActionParameter", new VariableContextualParameter(GlobalVariableType.Action, "action"));
+                parameterFactory.Register("DoFunctionParameter", new VariableContextualParameter(GlobalVariableType.Function, "function"));
+                parameterFactory.Register("StoredPointParameter", new VariableContextualParameter(GlobalVariableType.StoredPoint, "storedPoint"));
+                parameterFactory.Register("DatabasePointParameter", new VariableContextualParameter(GlobalVariableType.DatabasePoint, "databasePoint"));   
+            }
         }
 
         public SmartEvent EventFactory(int id)
         {
             if (!smartDataManager.Contains(SmartType.SmartEvent, id))
-                throw new NullReferenceException("No data for event id " + id);
+                throw new InvalidSmartEventException(id);
 
-            SmartEvent ev = new SmartEvent(id);
-            var raw = smartDataManager.GetRawData(SmartType.SmartEvent, id);
-            ev.Chance.SetValue(100);
+            SmartEvent ev = new(id);
+            ev.Chance.Value = 100;
+            SmartGenericJsonData raw = smartDataManager.GetRawData(SmartType.SmartEvent, id);
             SetParameterObjects(ev, raw);
-
-            if (raw.DescriptionRules != null)
-            {
-                ev.DescriptionRules = new List<DescriptionRule>();
-                foreach (var rule in raw.DescriptionRules)
-                {
-                    ev.DescriptionRules.Add(new DescriptionRule(rule));
-                }
-            }
-
             return ev;
         }
+        
+        public void UpdateEvent(SmartEvent ev, int id)
+        {
+            if (ev.Id == id)
+                return;
 
+            SmartGenericJsonData raw = smartDataManager.GetRawData(SmartType.SmartEvent, id);
+            SetParameterObjects(ev, raw, true);
+        }
+        
         public SmartEvent EventFactory(ISmartScriptLine line)
         {
             SmartEvent ev = EventFactory(line.EventType);
 
-            ev.Chance.SetValue(line.EventChance);
-            ev.Phases.SetValue(line.EventPhaseMask);
-            ev.Flags.SetValue(line.EventFlags);
-            ev.CooldownMin.SetValue(line.EventCooldownMin);
-            ev.CooldownMax.SetValue(line.EventCooldownMax);
+            ev.Chance.Value = line.EventChance;
+            ev.Phases.Value = line.EventPhaseMask;
+            ev.Flags.Value = line.EventFlags;
+            ev.CooldownMin.Value = line.EventCooldownMin;
+            ev.CooldownMax.Value = line.EventCooldownMax;
 
-            for (int i = 0; i < SmartEvent.SmartEventParamsCount; ++i)
-                ev.SetParameter(i, GetEventParameter(line, i));
+            for (var i = 0; i < SmartEvent.SmartEventParamsCount; ++i)
+            {
+                ev.GetParameter(i).Value = line.GetEventParam(i);
+            }
 
             return ev;
         }
 
-        private int GetEventParameter(ISmartScriptLine line, int i)
+        public SmartCondition ConditionFactory(int id)
         {
-            // ugly but DB is in such form
-            switch (i)
-            {
-                case 0:
-                    return line.EventParam1;
-                case 1:
-                    return line.EventParam2;
-                case 2:
-                    return line.EventParam3;
-                case 3:
-                    return line.EventParam4;
-            }
-            throw new ArgumentException("Event parameter out of range");
+            if (!conditionDataManager.HasConditionData(id))
+                throw new NullReferenceException("No data for condition id " + id);
+
+            SmartCondition ev = new(id);
+            var raw = conditionDataManager.GetConditionData(id);
+            SetParameterObjects(ev, raw);
+
+            return ev;
+        }
+
+        public void UpdateCondition(SmartCondition smartCondition, int id)
+        {
+            if (smartCondition.Id == id)
+                return;
+
+            SetParameterObjects(smartCondition, conditionDataManager.GetConditionData(id));
+        }
+
+        public SmartCondition ConditionFactory(IConditionLine line)
+        {
+            SmartCondition condition = ConditionFactory(line.ConditionType);
+
+            condition.Inverted.Value = line.NegativeCondition;
+            condition.ConditionTarget.Value = line.ConditionTarget;
+            condition.GetParameter(0).Value = line.ConditionValue1;
+            condition.GetParameter(1).Value = line.ConditionValue2;
+            condition.GetParameter(2).Value = line.ConditionValue3;
+
+            return condition;
         }
 
         public SmartAction ActionFactory(int id, SmartSource source, SmartTarget target)
         {
             if (!smartDataManager.Contains(SmartType.SmartAction, id))
-                throw new NullReferenceException("No data for action id " + id);
+                throw new InvalidSmartActionException(id);
 
-            SmartAction action = new SmartAction(id, source, target);
-
-            SetParameterObjects(action, smartDataManager.GetRawData(SmartType.SmartAction, id));
+            SmartAction action = new(id, source, target);
+            var raw = smartDataManager.GetRawData(SmartType.SmartAction, id);
+            action.ActionFlags = raw.Flags;
+            action.CommentParameter.IsUsed = raw.CommentField != null;
+            action.CommentParameter.Name = raw.CommentField ?? "Comment";
+            SetParameterObjects(action, raw);
+            UpdateTargetPositionVisibility(action.Target);
 
             return action;
+        }
+
+        private void UpdateTargetPositionVisibility(SmartTarget target)
+        {
+            var actionData = smartDataManager.GetRawData(SmartType.SmartAction, target.Parent?.Id ?? SmartConstants.ActionNone);
+            var targetData = smartDataManager.GetRawData(SmartType.SmartTarget, target.Id);
+            foreach (var t in target.Position)
+                t.IsUsed = actionData.UsesTargetPosition | targetData.UsesTargetPosition;
+        }
+
+        public void UpdateAction(SmartAction smartAction, int id)
+        {
+            if (smartAction.Id == id)
+                return;
+            
+            SmartGenericJsonData raw = smartDataManager.GetRawData(SmartType.SmartAction, id);
+            smartAction.ActionFlags = raw.Flags;
+            smartAction.CommentParameter.IsUsed = raw.CommentField != null;
+            smartAction.CommentParameter.Name = raw.CommentField ?? "Comment";
+            SetParameterObjects(smartAction, raw, true);
+            UpdateTargetPositionVisibility(smartAction.Target);
         }
 
         public SmartAction ActionFactory(ISmartScriptLine line)
@@ -95,45 +154,53 @@ namespace WDE.SmartScriptEditor.Data
             SmartSource source = SourceFactory(line);
             SmartTarget target = TargetFactory(line);
 
+            var raw = smartDataManager.GetRawData(SmartType.SmartAction, line.ActionType);
+
+            if (raw.ImplicitSource != null)
+                UpdateSource(source, smartDataManager.GetDataByName(SmartType.SmartSource, raw.ImplicitSource).Id);
+            
             SmartAction action = ActionFactory(line.ActionType, source, target);
 
-            for (int i = 0; i < SmartAction.SmartActionParametersCount; ++i)
-                action.SetParameter(i, GetActionParameter(line, i));
-
-            return action;
-        }
-
-        private int GetActionParameter(ISmartScriptLine line, int i)
-        {
-            // ugly but DB is in such form
-            switch (i)
+            for (var i = 0; i < SmartAction.SmartActionParametersCount; ++i)
+                action.GetParameter(i).Value = line.GetActionParam(i);
+            
+            if (raw.SourceStoreInAction)
             {
-                case 0:
-                    return line.ActionParam1;
-                case 1:
-                    return line.ActionParam2;
-                case 2:
-                    return line.ActionParam3;
-                case 3:
-                    return line.ActionParam4;
-                case 4:
-                    return line.ActionParam5;
-                case 5:
-                    return line.ActionParam6;
+                try
+                {
+                    UpdateSource(source,
+                        smartDataManager.GetRawData(SmartType.SmartSource, (int) action.GetParameter(2).Value).Id);
+                    source.GetParameter(0).Value = action.GetParameter(3).Value;
+                    source.GetParameter(1).Value = action.GetParameter(4).Value;
+                    source.GetParameter(2).Value = action.GetParameter(5).Value;
+                    action.GetParameter(2).Value = 0;
+                    action.GetParameter(3).Value = 0;
+                    action.GetParameter(4).Value = 0;
+                    action.GetParameter(5).Value = 0;
+                }
+                catch (Exception)
+                {
+                }
             }
-            throw new ArgumentException("Action parameter out of range");
+            
+            return action;
         }
 
         public SmartTarget TargetFactory(int id)
         {
             if (!smartDataManager.Contains(SmartType.SmartTarget, id))
-                throw new NullReferenceException("No data for target id " + id);
+                throw new InvalidSmartTargetException(id);
 
-            SmartTarget target = new SmartTarget(id);
+            var data = smartDataManager.GetRawData(SmartType.SmartTarget, id);
+            
+            if (data.ReplaceWithId.HasValue)
+                return TargetFactory(data.ReplaceWithId.Value);
+            
+            SmartTarget target = new(id);
 
-            SetParameterObjects(target, smartDataManager.GetRawData(SmartType.SmartTarget, id));
+            SetParameterObjects(target, data);
 
-            var targetTypes = smartDataManager.GetRawData(SmartType.SmartTarget, id).Types;
+            var targetTypes = data.Types;
 
             if (targetTypes != null && targetTypes.Contains("Position"))
                 target.IsPosition = true;
@@ -141,6 +208,56 @@ namespace WDE.SmartScriptEditor.Data
             return target;
         }
 
+        public void UpdateTarget(SmartTarget smartTarget, int id)
+        {
+            if (smartTarget.Id == id)
+                return;
+
+            SmartGenericJsonData raw = smartDataManager.GetRawData(SmartType.SmartTarget, id);
+
+            if (raw.ReplaceWithId.HasValue)
+            {
+                UpdateTarget(smartTarget, raw.ReplaceWithId.Value);
+                return;
+            }
+            
+            SetParameterObjects(smartTarget, raw, true);
+            UpdateTargetPositionVisibility(smartTarget);
+        }
+
+        public SmartSource SourceFactory(int id)
+        {
+            if (!smartDataManager.Contains(SmartType.SmartSource, id))
+                throw new InvalidSmartSourceException(id);
+
+            var data = smartDataManager.GetRawData(SmartType.SmartSource, id);
+
+            if (data.ReplaceWithId.HasValue)
+                return SourceFactory(data.ReplaceWithId.Value);
+            
+            SmartSource source = new(id);
+
+            SetParameterObjects(source, data);
+
+            return source;
+        }
+        
+        public void UpdateSource(SmartSource smartSource, int id)
+        {
+            if (smartSource.Id == id)
+                return;
+            
+            SmartGenericJsonData raw = smartDataManager.GetRawData(SmartType.SmartSource, id);
+            
+            if (raw.ReplaceWithId.HasValue)
+            {
+                UpdateSource(smartSource, raw.ReplaceWithId.Value);
+                return;
+            }
+            
+            SetParameterObjects(smartSource, raw, true);
+        }
+        
         public SmartTarget TargetFactory(ISmartScriptLine line)
         {
             SmartTarget target = TargetFactory(line.TargetType);
@@ -150,81 +267,94 @@ namespace WDE.SmartScriptEditor.Data
             target.Z = line.TargetZ;
             target.O = line.TargetO;
 
-            target.Condition.SetValue(line.TargetConditionId);
+            target.Condition.Value = (line.TargetConditionId);
 
-            for (int i = 0; i < SmartTarget.SmartSourceParametersCount; ++i)
-                target.SetParameter(i, GetTargetParameter(line, i));
+            for (var i = 0; i < SmartSource.SmartSourceParametersCount; ++i)
+                target.GetParameter(i).Value = line.GetTargetParam(i);
 
             return target;
-        }
-
-        private int GetSourceParameter(ISmartScriptLine line, int i)
-        {
-            // ugly but DB is in such form
-            switch (i)
-            {
-                case 0:
-                    return line.SourceParam1;
-                case 1:
-                    return line.SourceParam2;
-                case 2:
-                    return line.SourceParam3;
-            }
-            throw new ArgumentException("Source parameter out of range");
-        }
-
-        public SmartSource SourceFactory(int id)
-        {
-            if (!smartDataManager.Contains(SmartType.SmartSource, id))
-                throw new NullReferenceException("No data for source id " + id);
-
-            SmartSource source = new SmartSource(id);
-
-            SetParameterObjects(source, smartDataManager.GetRawData(SmartType.SmartSource, id));
-
-            return source;
         }
 
         private SmartSource SourceFactory(ISmartScriptLine line)
         {
             SmartSource source = SourceFactory(line.SourceType);
 
-            source.Condition.SetValue(line.SourceConditionId);
+            source.Condition.Value = line.SourceConditionId;
 
-            for (int i = 0; i < SmartSource.SmartSourceParametersCount; ++i)
-                source.SetParameter(i, GetSourceParameter(line, i));
+            for (var i = 0; i < SmartSource.SmartSourceParametersCount; ++i)
+                source.GetParameter(i).Value = line.GetSourceParam(i);
 
             return source;
         }
 
-        private int GetTargetParameter(ISmartScriptLine line, int i)
+        private void SetParameterObjects(SmartBaseElement element, SmartGenericJsonData data, bool update = false)
         {
-            // ugly but DB is in such form
-            switch (i)
+            if (data.DescriptionRules != null)
             {
-                case 0:
-                    return line.TargetParam1;
-                case 1:
-                    return line.TargetParam2;
-                case 2:
-                    return line.TargetParam3;
+                element.DescriptionRules = new List<DescriptionRule>();
+                foreach (SmartDescriptionRulesJsonData rule in data.DescriptionRules)
+                    element.DescriptionRules.Add(new DescriptionRule(rule));
             }
-            throw new ArgumentException("Target parameter out of range");
-        }
+            else
+                element.DescriptionRules = null;
 
-        private void SetParameterObjects(SmartBaseElement element, SmartGenericJsonData data)
-        {
+            element.Id = data.Id;
             element.ReadableHint = data.Description;
+
+            for (var i = 0; i < element.ParametersCount; ++i)
+            {
+                element.GetParameter(i).Name = "Parameter " + (i + 1) + " (unused)";
+                element.GetParameter(i).IsUsed = false;
+            }
+            
             if (data.Parameters == null)
                 return;
-            
-            for (int i = 0; i < data.Parameters.Count; ++i)
+
+            for (var i = 0; i < data.Parameters.Count; ++i)
             {
-                var parameter = _parameterFactory.Factory(data.Parameters[i].Type, data.Parameters[i].Name, data.Parameters[i].DefaultVal);
-                parameter.Description = data.Parameters[i].Description;
+                string key = data.Parameters[i].Type;
                 if (data.Parameters[i].Values != null)
-                    parameter.Items = data.Parameters[i].Values;
-                element.SetParameterObject(i, parameter);
+                {
+                    key = $"{data.Name}_{i}";
+                    if (!parameterFactory.IsRegisteredLong(key))
+                        parameterFactory.Register(key, data.Parameters[i].Type == "FlagParameter" ? new FlagParameter(){Items = data.Parameters[i].Values} : new Parameter(){Items = data.Parameters[i].Values});
+                }
+                
+                IParameter<long> parameter = parameterFactory.Factory(key);
+                element.GetParameter(i).Name = data.Parameters[i].Name;
+                if (!update)
+                    element.GetParameter(i).Value = data.Parameters[i].DefaultVal;
+                element.GetParameter(i).Parameter = parameter;
+                element.GetParameter(i).IsUsed = true;
+            }
+        }
+        
+        private void SetParameterObjects(SmartBaseElement element, ConditionJsonData data)
+        {
+            element.Id = data.Id;
+            element.ReadableHint = data.Description;
+
+            for (var i = 0; i < element.ParametersCount; ++i)
+                element.GetParameter(i).IsUsed = false;
+
+            if (data.Parameters == null)
+                return;
+
+            for (var i = 0; i < data.Parameters.Count; ++i)
+            {
+                string key = data.Parameters[i].Type;
+                if (data.Parameters[i].Values != null)
+                {
+                    key = $"{data.Name}_{i}";
+                    if (!parameterFactory.IsRegisteredLong(key))
+                        parameterFactory.Register(key, new Parameter(){Items = data.Parameters[i].Values});
+                }
+                
+                IParameter<long> parameter = parameterFactory.Factory(key);
+
+                element.GetParameter(i).Name = data.Parameters[i].Name;
+                element.GetParameter(i).IsUsed = true;
+                element.GetParameter(i).Parameter = parameter;
             }
         }
     }

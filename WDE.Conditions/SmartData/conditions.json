@@ -1,0 +1,914 @@
+[
+
+	{
+		"id": -1,
+		"name": "CONDITION_LOGICAL_OR",
+		"name_readable": "Or",
+		"help": "This is special meta condition that will generate separate 'else groups'",
+		"description": "or"
+	},
+
+	{
+		"id": 0,
+		"name": "CONDITION_NONE",
+		"name_readable": "Always",
+		"help": "Condition always met",
+		"description": "{negate:Always|Never}"
+	},
+
+	{
+		"id": 1,
+		"name": "CONDITION_AURA",
+		"name_readable": "Has aura",
+		"help": "Condition met if target have aura",
+		"parameters": [
+			{
+				"type": "SpellParameter",
+				"name": "Spell",
+				"description": "Aura from this spell id"
+			},
+			{
+				"type": "SpellEffectIndexParameter",
+				"name": "Spell Effect Index",
+				"description": "Each spell has 'effects', you can see them in Spell Work"
+			}
+		],
+		"description": "{target} {negate:has|has not} aura of spell {pram1}, effect {pram2}"
+	},
+
+	{
+		"id": 2,
+		"name": "CONDITION_ITEM",
+		"name_readable": "Has item",
+		"help": "Condition met if target has item",
+		"parameters": [
+			{
+				"type": "ItemParameter",
+				"name": "Item"
+			},
+			{
+				"type": "Parameter",
+				"name": "Amount",
+				"description": "Minimum amount of items to mark condition as met"
+			},
+			{
+				"type": "BoolParameter",
+				"name": "Check bank",
+				"description": "If true, core will check items in bank too"
+			}
+		],
+		"description": "{target} {negate:has|has not} {pram2} of item {pram1} in backpack{pram3value:choose(0):| or in bank}"
+	},
+
+	{
+		"id": 3,
+		"name": "CONDITION_ITEM_EQUIPPED",
+		"name_readable": "Has item equipped",
+		"help": "Condition met if target has item equipped",
+		"parameters": [
+			{
+				"type": "ItemParameter",
+				"name": "Item",
+				"description": "Item id to check (this condition applies only to players!)"
+			}
+		],
+		"description": "{target} {negate:has|has not} equipped item {pram1}"
+	},
+
+	{
+		"id": 4,
+		"name": "CONDITION_ZONEID",
+		"name_readable": "In zone",
+		"help": "Condition met if target is in zone",
+		"parameters": [
+			{
+				"type": "ZoneAreaParameter",
+				"name": "Zone"
+			}
+		],
+		"description": "{target} {negate:in|is not in} zone {pram1}"
+	},
+
+	{
+		"id": 5,
+		"name": "CONDITION_REPUTATION_RANK",
+		"name_readable": "Has reputation rank",
+		"help": "Condition true if target has at least given reputation rank",
+		"parameters": [
+			{
+				"type": "Parameter",
+				"name": "Faction",
+				"description": "Faction ID to test"
+			},
+			{
+				"type": "ReputationRankParameter",
+				"name": "Minimum rank"
+			}
+		],
+		"description": "{target} {negate:has at least|has no more than} reputation {pram2} to faction {pram1}"
+	},
+
+	{
+		"id": 6,
+		"name": "CONDITION_TEAM",
+		"name_readable": "Is horde/alliance",
+		"help": "Condition met if target (only player) belongs to horde/alliance",
+		"parameters": [
+			{
+				"type": "TeamAllianceParameter",
+				"name": "Team",
+				"description": "Team to test. Only applies to players"
+			}
+		],
+		"description": "{target} {negate:belongs|doesn't belong to} to {pram1}"
+	},
+
+	{
+		"id": 7,
+		"name": "CONDITION_SKILL",
+		"name_readable": "Has skill",
+		"help": "Condition met if target has given skill",
+		"parameters": [
+			{
+				"type": "SkillParameter",
+				"name": "Skill",
+				"description": "Skill ID to test"
+			},
+			{
+				"type": "Parameter",
+				"name": "Minimum skill value"
+			}
+		],
+		"description": "{target} {negate:has at least|has no more than} value {pram2} for skill {pram1}"
+	},
+
+	{
+		"id": 8,
+		"name": "CONDITION_QUESTREWARDED",
+		"name_readable": "Has quest rewarded",
+		"help": "Condition true if target has quest already rewarded",
+		"parameters": [
+			{
+				"type": "QuestParameter",
+				"name": "Quest",
+				"description": "Quest ID to check"
+			}
+		],
+		"description": "{target} {negate:has|has not} quest {pram1} rewarded"
+	},
+
+	{
+		"id": 9,
+		"name": "CONDITION_QUESTTAKEN",
+		"name_readable": "Has quest taken",
+		"help": "Condition is met if target has quest taken (in quest log)",
+		"parameters": [
+			{
+				"type": "QuestParameter",
+				"name": "Quest",
+				"description": "Quest ID to check"
+			}
+		],
+		"description": "{target} {negate:has|doesn't have} quest {pram1} active"
+	},
+
+	{
+		"id": 10,
+		"name": "CONDITION_DRUNKENSTATE",
+		"name_readable": "Is drunk",
+		"help": "Condition is met if target is drunk",
+		"parameters": [
+			{
+				"type": "DrunkStateParameter",
+				"name": "Drunk State"
+			}
+		],
+		"description": "{target} {negate:has|doesn't have} drunk state {pram1}"
+	},
+	{
+		"id": 11,
+		"name": "CONDITION_WORLD_STATE",
+		"name_readable": "World state",
+		"help": "Condition is met if world is in state",
+		"parameters": [
+			{
+				"type": "Parameter",
+				"name": "Variable Index"
+			},
+			{
+				"type": "Parameter",
+				"name": "Variable Value"
+			}
+		],
+		"description": "World variable {pram1} {negate:is|is not} set to {pram2}"
+	},
+
+	{
+		"id": 12,
+		"name": "CONDITION_ACTIVE_EVENT",
+		"name_readable": "Is event active",
+		"help": "Condition is met if game event is active",
+		"parameters": [
+			{
+				"type": "GameEventParameter",
+				"name": "Event"
+			}
+		],
+		"description": "Event {pram1} is {negate:active|inactive}"
+	},
+
+	{
+		"id": 13,
+		"name": "CONDITION_INSTANCE_INFO",
+		"name_readable": "Instance in state",
+		"help": "Condition is met if instance is in given state",
+		"parameters": [
+			{
+				"type": "Parameter",
+				"name": "Data Type",
+				"description": "DEF"
+			},
+			{
+				"type": "Parameter",
+				"name": "Value",
+				"description": "If BOSS_STATE, avaliable values: NOT_STARTED = 0, IN_PROGRESS = 1, FAIL = 2, DONE = 3, SPECIAL = 4, TO_BE_DECIDED = 5"
+			},
+			{
+				"type": "SwitchParameter",
+				"name": "Type",
+				"values": {
+					"0": {"name": "INSTANCE_INFO_DATA"},
+					"1": {"name": "INSTANCE_INFO_GUID_DATA"},
+					"2": {"name": "INSTANCE_INFO_BOSS_STATE"},
+					"3": {"name": "INSTANCE_INFO_DATA64"}
+				}
+			}
+		],
+		"description": "{negate:|NOT }{pram3value:choose(0|1|2|3):instance data {pram1} equals {pram2}|??????|boss {pram1} {pram2value:choose(0|1|2|3|4|5):has not started|is in progress|failed|special state|is to be decided?}|data64[{pram1}] = {pram2}}"
+	},
+
+	{
+		"id": 14,
+		"name": "CONDITION_QUEST_NONE",
+		"name_readable": "Has not quest",
+		"help": "Condition is met if target has never finished nor has active quest",
+		"parameters": [
+			{
+				"type": "QuestParameter",
+				"name": "Quest",
+				"description": "Quest ID to check"
+			}
+		],
+		"description": "{target} {negate:has never finished nor has active|has finished or active} quest {pram1}"
+	},
+
+	{
+		"id": 15,
+		"name": "CONDITION_CLASS",
+		"name_readable": "Is class",
+		"help": "Condition is met if target (only player) is given class",
+		"parameters": [
+			{
+				"type": "ClassParameter",
+				"name": "Class",
+				"description": "Only for players"
+			}
+		],
+		"description": "{target} {negate:is|is not} class {pram1}"
+	},
+
+	{
+		"id": 16,
+		"name": "CONDITION_RACE",
+		"name_readable": "Is race",
+		"help": "Condition is met if target (only player) is given race",
+		"parameters": [
+			{
+				"type": "RaceParameter",
+				"name": "Race",
+				"description": "Only for players"
+			}
+		],
+		"description": "{target} {negate:is|is not} race {pram1}"
+	},
+
+	{
+		"id": 17,
+		"name": "CONDITION_ACHIEVEMENT",
+		"name_readable": "Has achievement",
+		"help": "Condition is met if target has achievement completed",
+		"parameters": [
+			{
+				"type": "AchievementParameter",
+				"name": "Achievement"
+			}
+		],
+		"description": "{target} {negate:has|doesn't have} achievement {pram1} completed"
+	},
+
+	{
+		"id": 18,
+		"name": "CONDITION_TITLE",
+		"name_readable": "Has title",
+		"help": "Condition is met if target has title",
+		"parameters": [
+			{
+				"type": "Parameter",
+				"name": "Title ID"
+			}
+		],
+		"description": "{target} {negate:has|doesn't have} title {pram1}"
+	},
+
+	{
+		"id": 19,
+		"name": "CONDITION_SPAWNMASK",
+		"name_readable": "Has spawnmask",
+		"help": "Condition is met if target has spawn mask",
+		"parameters": [
+			{
+				"type": "Parameter",
+				"name": "Spawn mask"
+			}
+		],
+		"description": "{target} {negate:in|is not in} spawn mask {pram1}"
+	},
+
+	{
+		"id": 20,
+		"name": "CONDITION_GENDER",
+		"name_readable": "Is gender",
+		"help": "Condition is met if target has gender",
+		"parameters": [
+			{
+				"type": "GenderParameter",
+				"name": "Gender"
+			}
+		],
+		"description": "{target} {negate:is|is not} {pram1}"
+	},
+
+	{
+		"id": 21,
+		"name": "CONDITION_UNIT_STATE",
+		"name_readable": "Has unit state",
+		"help": "Condition is met if target has unit state",
+		"parameters": [
+			{
+				"type": "UnitStateParameter",
+				"name": "Unit State"
+			}
+		],
+		"description": "{target} {negate:has|doesn't have} unit state {pram1}"
+	},
+
+	{
+		"id": 22,
+		"name": "CONDITION_MAPID",
+		"name_readable": "Is map",
+		"help": "Condition is met if target is in map",
+		"parameters": [
+			{
+				"type": "MapParameter",
+				"name": "Map"
+			}
+		],
+		"description": "{target} {negate:in|is not in} map {pram1}"
+	},
+
+	{
+		"id": 23,
+		"name": "CONDITION_AREAID",
+		"name_readable": "In area",
+		"help": "Condition is met if target is in area",
+		"parameters": [
+			{
+				"type": "ZoneAreaParameter",
+				"name": "Area"
+			}
+		],
+		"description": "{target} {negate:in|is not in} area {pram1}"
+	},
+
+	{
+		"id": 24,
+		"name": "CONDITION_CREATURE_TYPE",
+		"name_readable": "Is creature type",
+		"help": "Condition is true if target is creature type",
+		"parameters": [
+			{
+				"type": "CreatureTypeParameter",
+				"name": "Type",
+				"description": "From creature_template.type"
+			}
+		],
+		"description": "{target} {negate:is|is not} {pram1}"
+	},
+
+	{
+		"id": 25,
+		"name": "CONDITION_SPELL",
+		"name_readable": "Has spell",
+		"help": "Condition is met if target (only player) has learned spell",
+		"parameters": [
+			{
+				"type": "SpellParameter",
+				"name": "Spell",
+				"description": "Only for players"
+			}
+		],
+		"description": "{target} {negate:has learned|hasn't learned} spell {pram1}"
+	},
+
+	{
+		"id": 26,
+		"name": "CONDITION_PHASEID",
+		"name_readable": "In phase",
+		"help": "Condition is met if target is in phase",
+		"parameters": [
+			{
+				"type": "PhaseParameter",
+				"name": "Phase"
+			}
+		],
+		"description": "{target} {negate:in|is not in} phase {pram1}"
+	},
+
+	{
+		"id": 27,
+		"name": "CONDITION_LEVEL",
+		"name_readable": "Level",
+		"help": "Condition is met if target has level",
+		"parameters": [
+			{
+				"type": "Parameter",
+				"name": "Level",
+				"description": "Level to compare"
+			},
+			{
+				"type": "ConditionsComparisonTypeParameter",
+				"name": "Comparison",
+				"description": "Comparison type"
+			}
+		],
+		"description": "{target}'s level {negate:{pram2value:choose(0|1|2|3|4):=|>|<|>=|<=|invalid value}|{pram2value:choose(0|1|2|3|4):!=|<=|>=|<|>|invalid value}} {pram1}"
+	},
+
+	{
+		"id": 28,
+		"name": "CONDITION_QUEST_COMPLETE",
+		"name_readable": "Has quest completed",
+		"help": "Condition is met if target player has quest completed, but not yet rewarded",
+		"parameters": [
+			{
+				"type": "QuestParameter",
+				"name": "Quest",
+				"description": "Quest id which player has to have completed with all objectives, but not yet rewarded"
+			}
+		],
+		"description": "{target} {negate:has completed quest|hasn't completed} quest {pram1} {negate:(but not yet rewarded)|(or completed and rewarded)}"
+	},
+	{
+		"id": 29,
+		"name": "CONDITION_NEAR_CREATURE",
+		"name_readable": "Creature nearby",
+		"help": "Condition is met if there is given creature nearby target",
+		"parameters": [
+			{
+				"type": "CreatureParameter",
+				"name": "Creature"
+			},
+			{
+				"type": "Parameter",
+				"name": "Distance"
+			}
+		],
+		"description": "There is {negate:|no }creature {pram1} within range {pram2} yards to {target}"
+	},
+
+	{
+		"id": 30,
+		"name": "CONDITION_NEAR_GAMEOBJECT",
+		"name_readable": "Gameobject nearby",
+		"help": "Condition is met if there is gameobject nearby target",
+		"parameters": [
+			{
+				"type": "GameobjectParameter",
+				"name": "Gameobject"
+			},
+			{
+				"type": "Parameter",
+				"name": "Distance"
+			}
+		],
+		"description": "There is {negate:|no }gameobject {pram1} within range {pram2} yards to {target}"
+	},
+
+	{
+		"id": 31,
+		"name": "CONDITION_OBJECT_ENTRY_GUID",
+		"name_readable": "Is entry/guid/type",
+		"help": "Condition is met if target has given entry, given guid or is given type",
+		"parameters": [
+			{
+				"type": "TypeIdParameter",
+				"name": "Type ID"
+			},
+			{
+				"type": "ConditionObjectEntryParameter",
+				"name": "Entry",
+				"description": "Creature or gameobject entry"
+			},
+			{
+				"type": "Parameter",
+				"name": "Guid from DB"
+			}
+		],
+		"description": "{target} {negate:is|is not} {pram1}{pram2value:choose(0):|, entry is {pram2}}{pram3value:choose(0):| and guid is {pram3}}"
+	},
+
+	{
+		"id": 32,
+		"name": "CONDITION_TYPE_MASK",
+		"name_readable": "Has typemask",
+		"help": "Condition is met if target is in given typemask",
+		"parameters": [
+			{
+				"type": "FlagParameter",
+				"name": "Type Mask",
+				"values": {
+					"1": {"name": "TYPEMASK_OBJECT"},
+					"2": {"name": "TYPEMASK_ITEM"},
+					"6": {"name": "TYPEMASK_CONTAINER", "description": "TYPEMASK_ITEM | 0x0004"},
+					"8": {"name": "TYPEMASK_UNIT"},
+					"16": {"name": "TYPEMASK_PLAYER"},
+					"32": {"name": "TYPEMASK_GAMEOBJECT"},
+					"64": {"name": "TYPEMASK_DYNAMICOBJECT"},
+					"128": {"name": "TYPEMASK_CORPSE"},
+					"256": {"name": "TYPEMASK_AREATRIGGER"},
+					"88": {"name": "TYPEMASK_SEER", "description": "TYPEMASK_PLAYER | TYPEMASK_UNIT | TYPEMASK_DYNAMICOBJECT"}
+				}
+			}
+		],
+		"description": "{target} {negate:is|is not} of type {pram1}"
+	},
+
+	{
+		"id": 33,
+		"name": "CONDITION_RELATION_TO",
+		"name_readable": "Is in relation",
+		"help": "Condition is met if target is in relation",
+		"parameters": [
+			{
+				"type": "SwitchParameter",
+				"name": "Condition Target",
+				"values": {
+					"0": {"name": "Invoker"},
+					"1": {"name": "Object"}
+				}
+			},
+			{
+				"type": "SwitchParameter",
+				"name": "Relation",
+				"values": {
+					"0": {"name": "RELATION_SELF"},
+					"1": {"name": "RELATION_IN_PARTY"},
+					"2": {"name": "RELATION_IN_RAID_OR_PARTY"},
+					"3": {"name": "RELATION_OWNED_BY"},
+					"4": {"name": "RELATION_PASSENGER_OF"},
+					"5": {"name": "RELATION_CREATED_BY"}
+				}
+			}
+		],
+		"description": "{negate:|NOT }{target} {pram2value:choose(0|1|2|3|4|5):is {pram1}|is in party with {pram2}|is in raid or party with {pram2}|is owned by {pram1}|is passenger of {pram1}|is summoned by {pram1}}"
+	},
+
+	{
+		"id": 34,
+		"name": "CONDITION_REACTION_TO",
+		"name_readable": "Has reputation",
+		"help": "Condition is met if target has reputation",
+		"parameters": [
+			{
+				"type": "SwitchParameter",
+				"name": "Condition Target",
+				"values": {
+					"0": {"name": "Invoker"},
+					"1": {"name": "Object"}
+				}
+			},
+			{
+				"type": "ReputationRankMaskParameter",
+				"name": "Rank"
+			}
+		],
+		"description": "{target} reaction to {pram1} {negate:is|is not} {pram2}"
+	},
+	{
+		"id": 35,
+		"name": "CONDITION_DISTANCE_TO",
+		"name_readable": "Distance between",
+		"help": "Condition is met if distance between targets is",
+		"parameters": [
+			{
+				"type": "SwitchParameter",
+				"name": "Condition Target",
+				"values": {
+					"0": {"name": "Invoker"},
+					"1": {"name": "Object"}
+				}
+			},
+			{
+				"type": "Parameter",
+				"name": "Distance"
+			},
+			{
+				"type": "ConditionsComparisonTypeParameter",
+				"name": "Comparison"
+			}
+		],
+		"description": "{target} distance to {pram1} {negate:{pram3value:choose(0|1|2|3|4):=|>|<|>=|<=|invalid value}|{pram3value:choose(0|1|2|3|4):!=|<=|>=|<|>|invalid value}} {pram2} yards"
+	},
+
+	{
+		"id": 36,
+		"name": "CONDITION_ALIVE",
+		"name_readable": "Is alive",
+		"help": "Condition is met if target is alive",
+		"description": "{target} {negate:is alive|is dead}"
+	},
+
+	{
+		"id": 37,
+		"name": "CONDITION_HP_VAL",
+		"name_readable": "Health points",
+		"help": "Condition is met if target's HP is",
+		"parameters": [
+			{
+				"type": "Parameter",
+				"name": "HP"
+			},
+			{
+				"type": "ConditionsComparisonTypeParameter",
+				"name": "Comparison"
+			}
+		],
+		"description": "{target}'s HP {negate:{pram2value:choose(0|1|2|3|4):=|>|<|>=|<=|invalid value}|{pram2value:choose(0|1|2|3|4):!=|<=|>=|<|>|invalid value}} {pram1}"
+	},
+
+	{
+		"id": 38,
+		"name": "CONDITION_HP_PCT",
+		"name_readable": "Health points percentage",
+		"help": "Condition is met if target's HP is",
+		"parameters": [
+			{
+				"type": "PercentageParameter",
+				"name": "HP %"
+			},
+			{
+				"type": "ConditionsComparisonTypeParameter",
+				"name": "Comparison"
+			}
+		],
+		"description": "{target}'s HP {negate:{pram2value:choose(0|1|2|3|4):=|>|<|>=|<=|invalid value}|{pram2value:choose(0|1|2|3|4):!=|<=|>=|<|>|invalid value}} {pram1}%"
+	},
+
+	{
+		"id": 41,
+		"name": "CONDITION_TERRAIN_SWAP",
+		"name_readable": "In terrain swap",
+		"help": "Condition is met if target is in tarrainswap",
+		"parameters": [
+			{
+				"type": "Parameter",
+				"name": "Terrain Swap",
+				"description": "To explain"
+			}
+		],
+		"description": "{target} {negate:in|is not in} terrain swap {pram1}"
+	},
+
+	{
+		"id": 42,
+		"name": "CONDITION_STAND_STATE",
+		"name_readable": "Has stand state",
+		"help": "Condition is met if target has specific stand state",
+		"parameters": [
+			{
+				"type": "BoolParameter",
+				"name": "Has not specific stand state"
+			},
+			{
+				"type": "StandStateParameter",
+				"name": "Stand state"
+			}
+		],
+		"description": "{target} {pram1value:choose(0):{negate:has|doesn't have} stand state {pram2}|{pram2value:choose(0|1):{negate:stands|doesn't stand}|{negate:sits|doesn't sit}|(never, invalid combination of parameters)}"
+	},
+
+	{
+		"id": 43,
+		"name": "CONDITION_DAILY_QUEST_DONE",
+		"name_readable": "Daily quest done",
+		"help": "Condition is met if target has quest done on that day",
+		"parameters": [
+			{
+				"type": "QuestParameter",
+				"name": "Quest"
+			}
+		],
+		"description": "{target} {negate:has completed|hasn't completed} daily quest {pram1} today"
+	},
+
+	{
+		"id": 44,
+		"name": "CONDITION_CHARMED",
+		"name_readable": "Is charmed",
+		"help": "Condition is met if target is charmed",
+		"description": "{target} {negate:is|is not} charmed"
+	},
+
+	{
+		"id": 45,
+		"name": "CONDITION_PET_TYPE",
+		"name_readable": "Has pet of type",
+		"parameters": [
+			{
+				"type": "PetTypeMaskParameter",
+				"name": "Quest"
+			}
+		],
+		"help": "Condition is met if target player has a pet of given type(s)",
+		"description": "{target} {negate:has|doesn't have} pet of type {pram1}"
+	},
+
+	{
+		"id": 46,
+		"name": "CONDITION_TAXI",
+		"name_readable": "Is using taxi",
+		"help": "Condition is met if target player is taking a taxi",
+		"description": "{target} {negate:is on taxi|is not on taxi}"
+	},
+
+	{
+		"id": 47,
+		"name": "CONDITION_QUESTSTATE",
+		"name_readable": "Has quest in state",
+		"parameters": [
+			{
+				"type": "QuestParameter",
+				"name": "Quest"
+			},
+			{
+				"type": "QuestStatusParameter",
+				"name": "State"
+			}
+		],
+		"help": "Condition is met if target player is in any of the provided quest states for the quest",
+		"description": "{target} {negate:has|doesn't have} {pram1} in state {pram2}"
+	},
+
+	{
+		"id": 48,
+		"name": "CONDITION_QUEST_OBJECTIVE_PROGRESS",
+		"name_readable": "Has quest objective progress",
+		"parameters": [
+			{
+				"type": "QuestParameter",
+				"name": "Quest"
+			},
+			{
+				"type": "Parameter",
+				"name": "Objective index"
+			},
+			{
+				"type": "Parameter",
+				"name": "Objective count"
+			}
+		],
+		"help": "Condition is met if target player has reached the specified objectiveCount quest progress for the objectiveIndex for the specified quest",
+		"description": "{target} {pram2} quest {pram1} objective {negate:==|!=} {pram3}"
+	},
+
+	{
+		"id": 49,
+		"name": "CONDITION_DIFFICULTY_ID",
+		"name_readable": "Is map difficulty",
+		"parameters": [
+			{
+				"type": "MapDifficultyParameter",
+				"name": "Map difficulty"
+			}
+		],
+		"help": "Condition is met if target map has difficulty id",
+		"description": "{target}'s map difficulty {negate:is|isn't} {pram1}"
+	},
+
+	{
+		"id": 50,
+		"name": "CONDITION_GAMEMASTER",
+		"name_readable": "Is gamemaster",
+		"parameters": [
+			{
+				"type": "SwitchParameter",
+				"name": "Check mode",
+				"values": {
+					"0": {"name": "is gamemaster"},
+					"1": {"name": "can be gamemaster"}
+				}
+			}
+		],
+		"help": "Condition is met if target player is (or can be) gamemaster",
+		"description": "{target} {pram1value:choose(1):{negate:can be gamemaster|can't be gamemaster}|{negate:is gamemaster|isn't gamemaster}}"
+	},
+
+	{
+		"id": 51,
+		"name": "CONDITION_OBJECT_ENTRY_GUID_MASTER",
+		"name_readable": "[TC 9.x] Is entry/guid/type",
+		"help": "[TC 9.x] Condition is met if target has given entry, given guid or is given type",
+		"parameters": [
+			{
+				"type": "SwitchParameter",
+				"name": "Type ID",
+				"values": {
+					"0": {"name": "TYPEID_OBJECT"},
+					"1": {"name": "TYPEID_ITEM"},
+					"2": {"name": "TYPEID_CONTAINER"},
+					"3": {"name": "TYPEID_UNIT"},
+					"4": {"name": "TYPEID_PLAYER"},
+					"5": {"name": "TYPEID_GAMEOBJECT"},
+					"6": {"name": "TYPEID_DYNAMICOBJECT"},
+					"7": {"name": "TYPEID_CORPSE"},
+					"8": {"name": "TYPEID_AREATRIGGER"}
+				}
+			},
+			{
+				"type": "ConditionObjectEntryParameter",
+				"name": "Entry",
+				"description": "Creature or gameobject entry"
+			},
+			{
+				"type": "Parameter",
+				"name": "Guid from DB"
+			}
+		],
+		"description": "{target} {negate:is|is not} {pram1}{pram2value:choose(0):|, entry is {pram2}}{pram3value:choose(0):| and guid is {pram3}}"
+	},
+
+	{
+		"id": 52,
+		"name": "CONDITION_TYPE_MASK_MASTER",
+		"name_readable": "[TC 9.x] Has typemask",
+		"help": "[TC 9.x] Condition is met if target is in given typemask",
+		"parameters": [
+			{
+				"type": "FlagParameter",
+				"name": "Type Mask",
+				"values": {
+					"1": {"name": "TYPEMASK_OBJECT"},
+					"2": {"name": "TYPEMASK_ITEM"},
+					"6": {"name": "TYPEMASK_CONTAINER", "description": "TYPEMASK_ITEM | 0x0004"},
+					"8": {"name": "TYPEMASK_UNIT"},
+					"16": {"name": "TYPEMASK_PLAYER"},
+					"32": {"name": "TYPEMASK_GAMEOBJECT"},
+					"64": {"name": "TYPEMASK_DYNAMICOBJECT"},
+					"128": {"name": "TYPEMASK_CORPSE"},
+					"256": {"name": "TYPEMASK_AREATRIGGER"},
+					"88": {"name": "TYPEMASK_SEER", "description": "TYPEMASK_PLAYER | TYPEMASK_UNIT | TYPEMASK_DYNAMICOBJECT"}
+				}
+			}
+		],
+		"description": "{target} {negate:is|is not} of type {pram1}"
+	},
+
+	{
+		"id": 53,
+		"name": "CONDITION_CREATURE_FAMILY",
+		"name_readable": "Is of family",
+		"help": "Condition is met if target is creature of family",
+		"parameters": [
+			{
+				"type": "Parameter",
+				"name": "Family"
+			}
+		],
+		"description": "{target} {negate:is|is not} of family {pram1}"
+	},
+
+	{
+		"id": 54,
+		"name": "CONDITION_CREATURE_SUBFAMILY",
+		"name_readable": "Is of subfamily",
+		"help": "Condition is met if target is creature of subfamily",
+		"parameters": [
+			{
+				"type": "Parameter",
+				"name": "Subfamily"
+			}
+		],
+		"description": "{target} {negate:is|is not} of subfamily {pram1}"
+	}
+
+]

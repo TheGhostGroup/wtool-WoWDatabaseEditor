@@ -1,30 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace WoWDatabaseEditor.ModulesManagement
+namespace WoWDatabaseEditorCore.ModulesManagement
 {
-    interface IModulesManager
+    public interface IModulesManager
     {
-        void AddConflicted(Assembly conflictingAssembly, Assembly firstAssembly);
-        void AddModule(Assembly module);
         IEnumerable<ModuleData> Modules { get; }
+        void AddConflicted(Assembly conflictingAssembly, Assembly firstAssembly);
+        bool AddModule(Assembly module);
+        bool ShouldLoad(Assembly module);
     }
 
     public class ModuleData
     {
-        public ModuleData(Assembly assembly, bool isLoaded, Assembly conflictingAssembly = null)
+        public ModuleData(Assembly assembly, bool isEnabled, bool isLoaded, Assembly? conflictingAssembly = null)
         {
             Assembly = assembly;
+            IsEnabled = isEnabled;
             IsLoaded = isLoaded;
             ConflictingAssembly = conflictingAssembly;
         }
 
         public Assembly Assembly { get; }
+        public bool IsEnabled { get; }
         public bool IsLoaded { get; }
-        public Assembly ConflictingAssembly { get; }
+        public Assembly? ConflictingAssembly { get; }
     }
 }

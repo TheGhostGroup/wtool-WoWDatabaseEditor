@@ -1,25 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using WDE.Common;
-using WDE.Module.Attributes;
 using WDE.Common.Managers;
 using WDE.Common.Solution;
+using WDE.Module.Attributes;
 
 namespace WDE.Solutions.Manager
 {
     [AutoRegister]
     public class SolutionItemEditorRegistry : ISolutionItemEditorRegistry
     {
-        private Dictionary<Type, object> editorProviders = new Dictionary<Type, object>();
+        private readonly Dictionary<Type, object> editorProviders = new();
 
         public SolutionItemEditorRegistry(IEnumerable<ISolutionItemEditorProvider> providers)
         {
             // handy trick with (dynamic) cast, thanks to this proper Generic method will be called!
-            foreach (var provider in providers)
-                Register((dynamic)provider);
+            foreach (ISolutionItemEditorProvider provider in providers)
+                Register((dynamic) provider);
+        }
+
+        public IDocument GetEditor(ISolutionItem item)
+        {
+            return GetEditor((dynamic) item);
         }
 
         private void Register<T>(ISolutionItemEditorProvider<T> provider) where T : ISolutionItem
@@ -27,15 +29,11 @@ namespace WDE.Solutions.Manager
             editorProviders.Add(typeof(T), provider);
         }
 
-        private Document GetEditor<T>(T item) where T : ISolutionItem
+        private IDocument GetEditor<T>(T item) where T : ISolutionItem
         {
-            var x = editorProviders[item.GetType()] as ISolutionItemEditorProvider<T>;
-            return x.GetEditor(item);
-        }
-
-        public Document GetEditor(ISolutionItem item)
-        {
-            return GetEditor((dynamic)item);
+            if (!editorProviders.TryGetValue(item.GetType(), out var editor))
+                throw new SolutionItemEditorNotFoundException(item);
+            return ((ISolutionItemEditorProvider<T>)editor).GetEditor(item);
         }
     }
 }

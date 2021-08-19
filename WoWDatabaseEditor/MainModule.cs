@@ -1,18 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Prism.Ioc;
+﻿using Prism.Ioc;
 using WDE.Module;
+using WoWDatabaseEditorCore.Services.Statistics;
 
-namespace WoWDatabaseEditor
+namespace WoWDatabaseEditorCore
 {
     public class MainModule : ModuleBase
     {
-        public override void RegisterTypes(IContainerRegistry containerRegistry)
+        public override void OnInitialized(IContainerProvider containerProvider)
         {
-            base.RegisterTypes(containerRegistry);
+            base.OnInitialized(containerProvider);
+            containerProvider.Resolve<StatisticsService>();
         }
     }
 }

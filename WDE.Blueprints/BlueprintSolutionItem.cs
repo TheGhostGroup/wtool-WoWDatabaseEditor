@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WDE.Common;
+﻿using WDE.Common;
 
 namespace WDE.Blueprints
 {
@@ -17,5 +11,7 @@ namespace WDE.Blueprints
         public string ExtraId => "";
 
         public bool IsExportable => false;
+
+        public ISolutionItem Clone() => null!;
     }
 }

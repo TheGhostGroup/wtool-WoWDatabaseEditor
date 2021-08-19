@@ -1,28 +1,42 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-
+using WDE.Common.Managers;
 using WDE.Common.Parameters;
 using WDE.Common.Providers;
-using Prism.Ioc;
+using WDE.Module.Attributes;
 
-namespace WoWDatabaseEditor.Services.ItemFromListSelectorService
+namespace WoWDatabaseEditorCore.Services.ItemFromListSelectorService
 {
-    [WDE.Module.Attributes.AutoRegister]
+    [AutoRegister]
     public class ItemFromListProvider : IItemFromListProvider
     {
-        public ItemFromListProvider()
-        {
-        }
+        private readonly IWindowManager windowManager;
 
-        public int? GetItemFromList(Dictionary<int, SelectOption> items, bool flags)
+        public ItemFromListProvider(IWindowManager windowManager)
         {
-            ItemFromListProviderView view = new ItemFromListProviderView();
-            ItemFromListProviderViewModel vm = new ItemFromListProviderViewModel(items, flags);
-            view.DataContext = vm;
-            if (view.ShowDialog().Value)
+            this.windowManager = windowManager;
+        }
+        
+        public async Task<long?> GetItemFromList(Dictionary<long, SelectOption>? items, bool flags, long? current = null)
+        {
+            using LongItemFromListProviderViewModel vm = new(items, flags, current);
+            if (await windowManager.ShowDialog(vm))
+                return vm.GetEntry();
+            return null;
+        }
+        
+        public async Task<string?> GetItemFromList(Dictionary<string, SelectOption>? items, bool multiSelect, string? current = null)
+        {
+            using StringItemFromListProviderViewModel vm = new(items, multiSelect, current);
+            if (await windowManager.ShowDialog(vm))
+                return vm.GetEntry();
+            return null;
+        }
+        
+        public async Task<float?> GetItemFromList(Dictionary<float, SelectOption>? items)
+        {
+            using FloatItemFromListProviderViewModel vm = new(items);
+            if (await windowManager.ShowDialog(vm))
                 return vm.GetEntry();
             return null;
         }

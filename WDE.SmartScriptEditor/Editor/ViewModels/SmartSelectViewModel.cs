@@ -1,99 +1,236 @@
-﻿using Prism.Commands;
-using Prism.Mvvm;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.IO;
 using System.Linq;
-using System.Windows.Data;
-
+using System.Threading;
+using System.Threading.Tasks;
+using DynamicData.Binding;
+using Prism.Commands;
+using WDE.Common.Managers;
+using WDE.Common.Utils;
+using WDE.Conditions.Data;
+using WDE.MVVM;
+using WDE.MVVM.Observable;
 using WDE.SmartScriptEditor.Data;
-using Prism.Ioc;
 
 namespace WDE.SmartScriptEditor.Editor.ViewModels
 {
-    public class SmartSelectViewModel : BindableBase
+    public class SmartSelectViewModel : ObservableBase, IDialog
     {
-        private readonly Func<SmartGenericJsonData, bool> _predicate;
-        private readonly ObservableCollection<SmartItem> _allItems = new ObservableCollection<SmartItem>();
+        private bool anyVisible => visibleCount > 0;
+        private int visibleCount = 0;
+        private CancellationTokenSource? currentToken;
 
-        private CollectionViewSource _items;
-        private SmartItem _selectedItem;
-        private string _searchBox;
+        private async Task FilterAndSort(string? text, CancellationTokenSource tokenSource, CancellationToken cancellationToken)
+        {
+            while (currentToken != null)
+            {
+                await Task.Run(() => Thread.Sleep(50)).ConfigureAwait(true);
+                currentToken = tokenSource;
+            }
+            
+            var lower = text?.ToLower();
+            
+            // filtering on a separate thread, so that UI doesn't lag
+            await Task.Run(() =>
+            {
+                visibleCount = 0;
+                foreach (var item in Items)
+                {
+                    item.Score = string.IsNullOrEmpty(lower) ? 100 : (item.Name.ToLower() == lower ? 101 : FuzzySharp.Fuzz.WeightedRatio(item.SearchName, lower));
+                    if (item.ShowItem)
+                        visibleCount++;
+                    else if (item == SelectedItem)
+                        SelectedItem = null;
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        currentToken = null;
+                        return;
+                    }
+                }
+            }, cancellationToken).ConfigureAwait(true);
 
-        public ICollectionView AllItems => _items.View;
+            if (cancellationToken.IsCancellationRequested)
+            {
+                currentToken = null;
+                return;
+            }
+            
+            // reordering items in ListBox is very expensive, therefore we are doing a trick
+            // instead of reordering them, I am only updating items on their indices
+            // that works!
+            var filtered = Items.OrderByDescending(f => string.IsNullOrEmpty(lower) ? -f.Order : f.Score).Select(f => new SmartItem().Update(f)).ToList();
+            for (int i = 0; i < filtered.Count; ++i)
+                Items[i].Update(filtered[i]);
+            
+            SelectedItem ??= Items.FirstOrDefault(f => f.ShowItem);
 
+            currentToken = null;
+        }
+
+        public SmartSelectViewModel(
+            string title,
+            SmartType type,
+            Func<SmartGenericJsonData, bool> predicate,
+            List<(int, string)>? customItems,
+            ISmartDataManager smartDataManager,
+            IConditionDataManager conditionDataManager)
+        {
+            Title = title;
+            MakeItems(type, predicate, customItems, smartDataManager, conditionDataManager);
+
+            AutoDispose(this.WhenValueChanged(t => t.SearchBox)!
+                .SubscribeAction(text =>
+                {
+                    if (currentToken != null)
+                    {
+                        Console.WriteLine("Searching in progress, canceling");
+                    }
+                    currentToken?.Cancel();
+                    var token = new CancellationTokenSource();
+                    FilterAndSort(text, token, token.Token).ListenErrors();
+                }));
+
+            if (Items.Count > 0)
+                SelectedItem = Items[0];
+
+            Cancel = new DelegateCommand(() => CloseCancel?.Invoke());
+            Accept = new DelegateCommand(() =>
+            {
+                if (selectedItem == null)
+                    SelectedItem = FindExactMatching() ?? Items.FirstOrDefault(f => f.ShowItem);
+
+                CloseOk?.Invoke();
+            }, () => selectedItem != null || (visibleCount == 1 || FindExactMatching() != null))
+                .ObservesProperty(() => SearchBox)
+                .ObservesProperty(() => SelectedItem);
+        }
+
+        private SmartItem? FindExactMatching()
+        {
+            if (string.IsNullOrEmpty(SearchBox.Trim()))
+                return null;
+            
+            var searchLowerCase = SearchBox.Trim().ToLower();
+            
+            foreach (var item in Items)
+            {
+                if (item.Name.ToLower() == searchLowerCase)
+                    return item;
+            }
+
+            return null;
+        }
+        
+        public void SelectFirstVisible()
+        {
+            if (visibleCount > 0)
+                SelectedItem = Items.FirstOrDefault(f => f.ShowItem);
+        }
+        
+        public ObservableCollectionExtended<SmartItem> Items { get; } = new();
+        
+        private string searchBox = "";
         public string SearchBox
         {
-            get { return _searchBox; }
-            set { SetProperty(ref _searchBox, value); _items.View.Refresh(); }
+            get => searchBox;
+            set => SetProperty(ref searchBox, value);
         }
 
-        public SmartItem SelectedItem
+        private SmartItem? selectedItem;
+        public SmartItem? SelectedItem
         {
-            get { return _selectedItem; }
-            set { SetProperty(ref _selectedItem, value);  }
-        }
-
-        public SmartSelectViewModel(string file, SmartType type, Func<SmartGenericJsonData, bool> predicate, ISmartDataManager smartDataManager)
-        {
-            _predicate = predicate;
-            string group = null;
-            foreach (string line in File.ReadLines("SmartData/" + file))
+            get => selectedItem;
+            set
             {
-                if (line.IndexOf(" ", StringComparison.Ordinal) == 0)
+                SetProperty(ref selectedItem, value);
+                Accept?.RaiseCanExecuteChanged();
+            }
+        }
+        
+        private void MakeItems(SmartType type, 
+            Func<SmartGenericJsonData, bool> predicate, 
+            List<(int id, string name)>? customItems,
+            ISmartDataManager smartDataManager, 
+            IConditionDataManager conditionDataManager)
+        {
+            int order = 0;
+            foreach (var smartDataGroup in smartDataManager.GetGroupsData(type))
+            {
+                foreach (var member in smartDataGroup.Members)
                 {
-                    if (!smartDataManager.Contains(type, line.Trim()))
-                        continue;
+                    if (smartDataManager.Contains(type, member))
+                    {
+                        SmartGenericJsonData data = smartDataManager.GetDataByName(type, member);
+                        if (predicate != null && !predicate(data))
+                            continue;
+                     
+                        SmartItem i = new();   
+                        i.Group = smartDataGroup.Name;
+                        i.Name = data.NameReadable;
+                        i.SearchName = data.SearchTags == null ? data.NameReadable : $"{data.NameReadable} {data.SearchTags}";
+                        i.Id = data.Id;
+                        i.Help = data.Help;
+                        i.IsTimed = data.IsTimed;
+                        i.Deprecated = data.Deprecated;
+                        i.Order = order++;
+                        i.EnumName = data.Name;
 
-                    SmartItem i = new SmartItem();
-                    var data = smartDataManager.GetDataByName(type, line.Trim());
-
-                    i.Group = group;
-                    i.Name = data.NameReadable;
-                    i.Id = data.Id;
-                    i.Help = data.Help;
-                    i.Deprecated = data.Deprecated;
-                    i.Data = data;
-
-                    _allItems.Add(i);
-                }
-                else
-                {
-                    group = line;
+                        Items.Add(i);
+                    }
                 }
             }
 
-            _items = new CollectionViewSource();
-            _items.Source = _allItems;
-            _items.GroupDescriptions.Add(new PropertyGroupDescription("Group"));
-            _items.Filter += ItemsOnFilter;
-
-            if (_items.View.MoveCurrentToFirst())
+            if (customItems != null)
             {
-                SelectedItem = _items.View.CurrentItem as SmartItem;
+                foreach (var customItem in customItems)
+                {
+                    SmartItem i = new();   
+                    i.Group = "Custom";
+                    i.Name = customItem.name;
+                    i.SearchName = customItem.name;
+                    i.CustomId = customItem.id;
+                    i.IsTimed = false;
+                    i.Deprecated = false;
+                    i.Order = order++;
+
+                    Items.Add(i);
+                }
+            }
+
+            if (type == SmartType.SmartCondition)
+            {
+                foreach (var conditionDataGroup in conditionDataManager.GetConditionGroups())
+                {
+                    foreach (var member in conditionDataGroup.Members)
+                    {
+                        if (conditionDataManager.HasConditionData(member))
+                        {
+                            ConditionJsonData data = conditionDataManager.GetConditionData(member);
+
+                            SmartItem i = new();
+                            i.Group = conditionDataGroup.Name;
+                            i.SearchName = data.NameReadable;
+                            i.Name = data.NameReadable;
+                            i.Id = data.Id;
+                            i.Help = data.Help;
+                            i.Deprecated = false;
+                            i.Order = order++;
+                            i.EnumName = data.Name;
+
+                            Items.Add(i);
+                        }
+                    }
+                }   
             }
         }
 
-        private void ItemsOnFilter(object sender, FilterEventArgs filterEventArgs)
-        {
-            var item = filterEventArgs.Item as SmartItem;
-
-            if (_predicate != null && !_predicate(item.Data))
-                filterEventArgs.Accepted = false;
-            else
-                filterEventArgs.Accepted = string.IsNullOrEmpty(SearchBox) || item.Name.ToLower().Contains(SearchBox.ToLower());
-        }
-    }
-
-    public class SmartItem
-    {
-        public string Name { get; set; }
-        public bool Deprecated { get; set; }
-        public string Help { get; set; }
-        public int Id { get; set; }
-        public string Group { get; set; }
-        public SmartGenericJsonData Data;
+        public DelegateCommand Cancel { get; }
+        public DelegateCommand Accept { get; }
+        public int DesiredWidth => 750;
+        public int DesiredHeight => 650;
+        public string Title { get; }
+        public bool Resizeable => true;
+        public event Action? CloseCancel;
+        public event Action? CloseOk;
     }
 }

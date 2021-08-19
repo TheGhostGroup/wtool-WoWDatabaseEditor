@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <OutputType>Library</OutputType>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <Nullable>enable</Nullable>
+        <WarningsAsErrors>nullable</WarningsAsErrors>
+        <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+        <Configurations>Debug;Release</Configurations>
+        <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+    <PropertyGroup>
+        <OutputPath>..\..\bin\$(Configuration)\</OutputPath>
+    </PropertyGroup>
+</Project>

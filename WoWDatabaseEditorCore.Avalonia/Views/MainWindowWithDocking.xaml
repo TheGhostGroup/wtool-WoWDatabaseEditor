@@ -1,0 +1,99 @@
+<controls:ExtendedWindow xmlns="https://github.com/avaloniaui"
+          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+          xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+          xmlns:mvvm="http://prismlibrary.com/"
+          xmlns:utils="clr-namespace:WDE.Common.Avalonia.Utils;assembly=WDE.Common.Avalonia"
+          xmlns:views="clr-namespace:WoWDatabaseEditorCore.Avalonia.Views"
+          xmlns:controls="clr-namespace:AvaloniaStyles.Controls;assembly=AvaloniaStyles"
+          xmlns:idc="clr-namespace:Dock.Avalonia.Controls;assembly=Dock.Avalonia"
+          xmlns:docking="clr-namespace:WoWDatabaseEditorCore.Avalonia.Docking"
+          xmlns:converters="clr-namespace:WDE.Common.Avalonia.Converters;assembly=WDE.Common.Avalonia"
+          xmlns:components="clr-namespace:WDE.Common.Avalonia.Components;assembly=WDE.Common.Avalonia"
+          xmlns:types="clr-namespace:WDE.Common.Types;assembly=WDE.Common"
+          mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+          mvvm:ViewModelLocator.AutoWireViewModel="True"
+          x:Class="WoWDatabaseEditorCore.Avalonia.Views.MainWindowWithDocking"
+          TransparencyLevelHint="AcrylicBlur"
+          Icon="../Icon.png"
+          ManagedIcon="../Icon.png"
+          Name="Root"
+          Classes="MainWindow"
+          utils:MenuBind.MenuItemsGestures="{Binding MenuItemProviders}"
+          Title="{Binding Title}">
+
+    <controls:ExtendedWindow.Resources>
+        <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+    </controls:ExtendedWindow.Resources>
+    
+    <NativeMenu.Menu>
+        <NativeMenu utils:MenuBind.MenuItems="{Binding MenuItemProviders}">
+        </NativeMenu>
+    </NativeMenu.Menu>
+    
+    <controls:ExtendedWindow.ToolBar>
+        <controls:ToolBar>
+            <controls:ToolBar.LeftContent>
+                <controls:ToolbarPanel>
+                    <components:ButtonImage Image="icons/icon_play.png" IsVisible="{Binding ShowPlayButtons}" Command="{Binding ExecuteChangedCommand}" />
+                    <components:ButtonImage Command="{Binding GenerateCurrentSqlCommand}"
+                                            IsVisible="{Binding ShowExportButtons}"
+                                            Text="To SQL" 
+                                            Image="icons/icon_to_sql.png" />
+                </controls:ToolbarPanel>
+            </controls:ToolBar.LeftContent>
+            <controls:ToolBar.MiddleContent>
+                <ContentPresenter DataContext="{Binding DocumentManager.ActiveDocument}" utils:ToolBarBind.Model="{Binding}" />
+            </controls:ToolBar.MiddleContent>
+        </controls:ToolBar>
+    </controls:ExtendedWindow.ToolBar>
+    
+    <controls:ExtendedWindow.StatusBar>
+        <controls:StatusBar>
+            <views:StatusBarView DockPanel.Dock="Bottom" Height="30" DataContext="{Binding StatusBar}" />
+        </controls:StatusBar>
+    </controls:ExtendedWindow.StatusBar>
+    
+    <controls:ExtendedWindow.Overlay>
+        <views:TasksPanel DataContext="{Binding TasksViewModel}"
+                          Margin="0,0,5,0"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Bottom"
+                          ClipToBounds="False"
+                          IsVisible="{Binding IsPanelVisible, Mode=OneWay}" />
+    </controls:ExtendedWindow.Overlay>
+
+    <idc:DockControl Name="DockControl">
+        <idc:DockControl.DataTemplates>
+            <docking:PersistentDockDataTemplate />
+        </idc:DockControl.DataTemplates>
+        <idc:DockControl.Styles>
+            <Style Selector="idc|DocumentControl">
+                <Setter Property="HeaderTemplate">
+                    <DataTemplate DataType="docking:AvaloniaDocumentDockWrapper">
+                        <StackPanel Orientation="Horizontal">
+                            <components:WdeImage Image="{Binding ViewModel.Icon, FallbackValue={x:Static views:MainWindowWithDocking.DocumentIcon}, TargetNullValue={x:Static views:MainWindowWithDocking.DocumentIcon}}" Width="16" Height="16"/>
+                            <TextBlock Text="{Binding Title}" Padding="2">
+                                <Interaction.Behaviors>
+                                    <DataTriggerBehavior Binding="{Binding ViewModel.IsModified}" ComparisonCondition="Equal" Value="False">
+                                        <ChangePropertyAction TargetObject="{Binding #TextBlock}" 
+                                                              PropertyName="FontWeight"
+                                                              Value="Normal" />
+                                    </DataTriggerBehavior>
+                                    <DataTriggerBehavior Binding="{Binding ViewModel.IsModified}" ComparisonCondition="Equal" Value="True">
+                                        <ChangePropertyAction TargetObject="{Binding #TextBlock}" 
+                                                              PropertyName="FontWeight"
+                                                              Value="Bold" />
+                                    </DataTriggerBehavior>
+                                </Interaction.Behaviors>
+                            </TextBlock>
+                        </StackPanel>
+                    </DataTemplate>
+                </Setter>
+            </Style>
+            <Style Selector="idc|DocumentControl ContentControl#PART_ContentPresenter > ContentPresenter ContentPresenter.documentView">
+                <Setter Property="IsVisible" Value="{Binding ViewModel.IsLoading, FallbackValue=true, Converter={StaticResource InverseBoolConverter}}" />
+            </Style>
+        </idc:DockControl.Styles>
+    </idc:DockControl>
+</controls:ExtendedWindow>

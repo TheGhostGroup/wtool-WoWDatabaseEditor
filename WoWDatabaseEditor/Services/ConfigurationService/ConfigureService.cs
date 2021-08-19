@@ -1,25 +1,42 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using AsyncAwaitBestPractices.MVVM;
+using WDE.Common.Managers;
 using WDE.Common.Services;
-using WoWDatabaseEditor.Services.ConfigurationService.Views;
-using WoWDatabaseEditor.Views;
+using WDE.Module.Attributes;
+using WoWDatabaseEditorCore.Services.ConfigurationService.ViewModels;
 
-namespace WoWDatabaseEditor.Services.ConfigurationService
+namespace WoWDatabaseEditorCore.Services.ConfigurationService
 {
-    [WDE.Module.Attributes.AutoRegister, WDE.Module.Attributes.SingleInstance]
+    [AutoRegister]
+    [SingleInstance]
     public class ConfigureService : IConfigureService
     {
-        public ConfigureService()
+        private readonly IDocumentManager documentManager;
+        private readonly Func<ConfigurationPanelViewModel> settings;
+
+        private ConfigurationPanelViewModel? openedPanel = null;
+
+        public ConfigureService(IDocumentManager documentManager, Func<ConfigurationPanelViewModel> settings)
         {
+            this.documentManager = documentManager;
+            this.settings = settings;
         }
 
         public void ShowSettings()
         {
-            ConfigurationWindow view = new ConfigurationWindow();
-            view.ShowDialog();
+            if (openedPanel == null)
+            {
+                openedPanel = settings();
+                IAsyncCommand? origCommand = openedPanel.CloseCommand;
+                openedPanel.CloseCommand = new AsyncCommand(async () =>
+                {
+                    if (origCommand != null)
+                        await origCommand.ExecuteAsync();
+                    openedPanel = null;
+                });
+            }
+            
+            documentManager.OpenDocument(openedPanel);
         }
     }
 }

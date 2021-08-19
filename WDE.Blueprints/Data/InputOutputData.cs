@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using WDE.Blueprints.Enums;
+﻿using WDE.Blueprints.Enums;
 
 namespace WDE.Blueprints.Data
 {
@@ -8,7 +6,7 @@ namespace WDE.Blueprints.Data
     {
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = "type")]
-        public IOType Type { get; set; }
+        public IoType Type { get; set; }
 
         [JsonProperty(PropertyName = "name")]
         public string Name { get; set; }

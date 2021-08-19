@@ -1,0 +1,45 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style>
+        <Style.Resources>
+            <FontFamily x:Key="MainFontSans">avares://AvaloniaStyles/Styles/Assets#Lato</FontFamily>
+        </Style.Resources>
+    </Style>
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Default.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Controls/GridViewStyle.axaml" />
+    <StyleInclude Source="avares://AvaloniaStyles/Controls/GroupingListBox.axaml" />
+    <StyleInclude Source="avares://AvaloniaStyles/Controls/WizardPanel.axaml" />
+    <StyleInclude Source="avares://AvaloniaStyles/Controls/DropDownButton.axaml" />
+    
+    <Style Selector="TextBlock">
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/PopupRoot.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/TreeView.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/TreeViewItem.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/TabStrip.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/Button.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/ToggleButton.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/TextBox.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/WindowControlButtons.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/Window.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/GridSplitter.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/StatusBar.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/SideBar.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/CheckBox.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/RadioButton.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/ComboBox.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/ComboBoxItem.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/ContextMenu.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/MenuItem.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/ListBox.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/ListBoxItem.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/DataGrid.xaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/GridView.axaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/GroupingListBox.axaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/NativeMenuBar.axaml"/>
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/TeachingTip.axaml"/>
+    
+    <StyleInclude Source="avares://AvaloniaStyles/Styles/BigSur/ToolsTabControl.xaml"/>
+</Styles>

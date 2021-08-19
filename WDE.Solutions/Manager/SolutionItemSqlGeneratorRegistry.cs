@@ -1,24 +1,65 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using Prism.Events;
 using WDE.Common;
-using WDE.Module.Attributes;
+using WDE.Common.Events;
+using WDE.Common.Managers;
 using WDE.Common.Solution;
+using WDE.Module.Attributes;
 
 namespace WDE.Solutions.Manager
 {
     [AutoRegister]
     public class SolutionItemSqlGeneratorRegistry : ISolutionItemSqlGeneratorRegistry
     {
-        private Dictionary<Type, object> sqlProviders = new Dictionary<Type, object>();
+        private readonly Lazy<IDocumentManager> documentManager;
+        private readonly IEventAggregator eventAggregator;
+        private readonly Dictionary<Type, object> sqlProviders = new();
 
-        public SolutionItemSqlGeneratorRegistry(IEnumerable<ISolutionItemSqlProvider> providers)
+        public SolutionItemSqlGeneratorRegistry(IEnumerable<ISolutionItemSqlProvider> providers, 
+            Lazy<IDocumentManager> documentManager,
+            IEventAggregator eventAggregator)
         {
+            this.documentManager = documentManager;
+            this.eventAggregator = eventAggregator;
             // handy trick with (dynamic) cast, thanks to this proper Generic method will be called!
-            foreach (var provider in providers)
-                Register((dynamic)provider);
+            foreach (ISolutionItemSqlProvider provider in providers)
+                Register((dynamic) provider);
+        }
+
+        public Task<string> GenerateSql(ISolutionItem item)
+        {
+            foreach (var document in documentManager.Value.OpenedDocuments)
+            {
+                if (document is not ISolutionItemDocument solutionItemDocument)
+                    continue;
+
+                // ReSharper disable once PossibleUnintendedReferenceComparison
+                if (solutionItemDocument.SolutionItem == item)
+                    return solutionItemDocument.GenerateQuery();
+            }
+
+            return GenerateSql((dynamic) item);
+        }
+
+        public async Task<IList<(ISolutionItem, string)>> GenerateSplitSql(ISolutionItem item)
+        {
+            foreach (var document in documentManager.Value.OpenedDocuments)
+            {
+                if (document is not ISolutionItemDocument solutionItemDocument)
+                    continue;
+
+                // ReSharper disable once PossibleUnintendedReferenceComparison
+                if (solutionItemDocument.SolutionItem == item)
+                {
+                    if (solutionItemDocument is ISplitSolutionItemQueryGenerator splitGenerator)
+                        return await splitGenerator.GenerateSplitQuery();
+                    return new List<(ISolutionItem, string)>(){(item, await solutionItemDocument.GenerateQuery())};
+                }
+            }
+
+            return new List<(ISolutionItem, string)>(){(item, await GenerateSql((dynamic) item))};
         }
 
         private void Register<T>(ISolutionItemSqlProvider<T> provider) where T : ISolutionItem
@@ -26,15 +67,17 @@ namespace WDE.Solutions.Manager
             sqlProviders.Add(typeof(T), provider);
         }
 
-        private string GenerateSql<T>(T item) where T : ISolutionItem
+        private async Task<string> GenerateSql<T>(T item) where T : ISolutionItem
         {
-            var x = sqlProviders[item.GetType()] as ISolutionItemSqlProvider<T>;
-            return x.GenerateSql(item);
-        }
-
-        public string GenerateSql(ISolutionItem item)
-        {
-            return GenerateSql((dynamic)item);
+            if (sqlProviders.TryGetValue(item.GetType(), out var provider))
+            {
+                return await ((ISolutionItemSqlProvider<T>)provider).GenerateSql(item);
+            }
+            else
+            {
+                return
+                    $"--- INTERNAL WoW Database Editor ERROR ---\n\n{item.GetType()} unknown SQL generator. Development info: You need to register class implementing ISolutionItemSqlProvider<T> interface";
+            }
         }
     }
 }

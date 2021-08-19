@@ -1,0 +1,43 @@
+﻿<controls:DialogViewBase x:Class="WoWDatabaseEditorCore.Avalonia.Services.CreatureEntrySelectorService.GenericSelectorDialogView"
+                         xmlns="https://github.com/avaloniaui"
+                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                         xmlns:prism="http://prismlibrary.com/"
+                         xmlns:utils="clr-namespace:WDE.Common.Avalonia.Utils;assembly=WDE.Common.Avalonia"
+                         xmlns:controls="clr-namespace:WDE.Common.Avalonia.Controls;assembly=WDE.Common.Avalonia"
+                         xmlns:controls1="clr-namespace:AvaloniaStyles.Controls;assembly=AvaloniaStyles"
+                         prism:ViewModelLocator.AutoWireViewModel="False">
+    <Grid Margin="6">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+            <RowDefinition Height="30" />
+        </Grid.RowDefinitions>
+        <controls:FixedTextBox x:Name="SearchBox" 
+                               Padding="2,4" 
+                               Text="{Binding SearchText}"
+                               utils:FocusUtils.FocusFirst="True"
+                               Margin="0,0,0,6"
+                               KeyDown="SearchBox_OnKeyDown"
+                               Watermark="Search"
+                               HorizontalAlignment="Stretch" />
+        <controls1:GridView  SelectedItem="{Binding SelectedItem, Mode=TwoWay}" 
+                             Grid.Row="1"
+                             Items="{Binding FilteredItems}"
+                             Margin="0,0,0,6"
+                             Name="GridView"
+                             utils:DataGridColumns.ColumnsSource="{Binding Columns}">
+            <Interaction.Behaviors>
+                <EventTriggerBehavior EventName="DoubleTapped">
+                    <InvokeCommandAction Command="{Binding Accept}" />
+                </EventTriggerBehavior>
+            </Interaction.Behaviors>
+        </controls1:GridView>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="80" />
+            </Grid.ColumnDefinitions>
+            <Button Command="{Binding Accept}" Grid.Column="1" Content="Ok" />
+        </Grid>
+    </Grid>
+</controls:DialogViewBase>

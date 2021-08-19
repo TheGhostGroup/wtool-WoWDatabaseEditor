@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using WDE.Common.Services;
 
 namespace WDE.ThemeChanger.Data
 {
-    public struct ThemeSettings
+    public struct ThemeSettings : ISettings
     {
         public string Name { get; }
 

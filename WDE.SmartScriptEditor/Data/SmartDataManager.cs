@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 using WDE.Module.Attributes;
-using WDE.Common.Database;
 
 namespace WDE.SmartScriptEditor.Data
 {
@@ -16,7 +13,7 @@ namespace WDE.SmartScriptEditor.Data
         SmartTarget = 2,
         SmartCondition = 3,
         SmartConditionSource = 4,
-        SmartSource = 5,
+        SmartSource = 5
     }
 
     public interface ISmartDataManager
@@ -24,64 +21,108 @@ namespace WDE.SmartScriptEditor.Data
         bool Contains(SmartType type, int id);
 
         bool Contains(SmartType type, string id);
-        
+
         SmartGenericJsonData GetRawData(SmartType type, int id);
 
         SmartGenericJsonData GetDataByName(SmartType type, string name);
+
+        IEnumerable<SmartGroupsJsonData> GetGroupsData(SmartType type);
+
+        IEnumerable<SmartGenericJsonData> GetAllData(SmartType type);
+        
+        void Reload(SmartType smartType);
     }
 
-    [SingleInstance, AutoRegister]
+    [AutoRegister]
+    [SingleInstance]
     public class SmartDataManager : ISmartDataManager
     {
-        private readonly Dictionary<SmartType, Dictionary<int, SmartGenericJsonData>> _smartIdData = new Dictionary<SmartType, Dictionary<int, SmartGenericJsonData>>();
-        private readonly Dictionary<SmartType, Dictionary<string, SmartGenericJsonData>> _smartNameData = new Dictionary<SmartType, Dictionary<string, SmartGenericJsonData>>();
-
-        public SmartDataManager(SmartDataProvider provider)
+        private readonly Dictionary<SmartType, Dictionary<int, SmartGenericJsonData>> smartIdData = new();
+        private readonly Dictionary<SmartType, Dictionary<string, SmartGenericJsonData>> smartNameData = new();
+        private readonly ISmartDataProvider provider;
+        
+        public SmartDataManager(ISmartDataProvider provider)
         {
             Load(SmartType.SmartEvent, provider.GetEvents());
             Load(SmartType.SmartAction, provider.GetActions());
             Load(SmartType.SmartTarget, provider.GetTargets());
-        }
-
-        private void Load(SmartType type, IEnumerable<SmartGenericJsonData> data)
-        {
-            foreach (var d in data)
-                Add(type, d);
+            this.provider = provider;
         }
 
         public bool Contains(SmartType type, int id)
         {
-            if (!_smartIdData.ContainsKey(type))
+            if (!smartIdData.ContainsKey(type))
                 return false;
 
-            return _smartIdData[type].ContainsKey(id);
+            return smartIdData[type].ContainsKey(id);
         }
 
         public bool Contains(SmartType type, string id)
         {
-            if (!_smartNameData.ContainsKey(type))
+            if (!smartNameData.ContainsKey(type))
                 return false;
 
-            return _smartNameData[type].ContainsKey(id);
+            return smartNameData[type].ContainsKey(id);
+        }
+
+        public SmartGenericJsonData GetRawData(SmartType type, int id)
+        {
+            if (!smartIdData[type].ContainsKey(id))
+                throw new NullReferenceException();
+
+            return smartIdData[type][id];
+        }
+
+        public SmartGenericJsonData GetDataByName(SmartType type, string name)
+        {
+            if (!smartNameData[type].ContainsKey(name))
+                throw new NullReferenceException();
+
+            return smartNameData[type][name];
+        }
+
+        public IEnumerable<SmartGroupsJsonData> GetGroupsData(SmartType type)
+        {
+            switch(type)
+            {
+                case SmartType.SmartEvent:
+                    return provider.GetEventsGroups();
+                case SmartType.SmartAction:
+                    return provider.GetActionsGroups();
+                case SmartType.SmartTarget:
+                case SmartType.SmartSource:
+                    return provider.GetTargetsGroups();
+                default:
+                    return new List<SmartGroupsJsonData>();
+            }
+        }
+
+        public IEnumerable<SmartGenericJsonData> GetAllData(SmartType type)
+        {
+            return smartIdData[type].Values;
+        }
+
+        private void Load(SmartType type, IEnumerable<SmartGenericJsonData> data)
+        {
+            foreach (SmartGenericJsonData d in data)
+                Add(type, d);
         }
 
         private void ActualAdd(SmartType type, SmartGenericJsonData data)
         {
-            if (!_smartIdData.ContainsKey(type))
+            if (!smartIdData.ContainsKey(type))
             {
-                _smartIdData[type] = new Dictionary<int, SmartGenericJsonData>();
-                _smartNameData[type] = new Dictionary<string, SmartGenericJsonData>();
+                smartIdData[type] = new Dictionary<int, SmartGenericJsonData>();
+                smartNameData[type] = new Dictionary<string, SmartGenericJsonData>();
             }
 
-            if (!_smartIdData[type].ContainsKey(data.Id))
+            if (!smartIdData[type].ContainsKey(data.Id))
             {
-                if (data.ValidTypes != null && data.ValidTypes.Contains(0))
-                    data.ValidTypes.Add(SmartScriptType.Creature);
-                _smartIdData[type].Add(data.Id, data);
-                _smartNameData[type].Add(data.Name, data);
+                smartIdData[type].Add(data.Id, data);
+                smartNameData[type].Add(data.Name, data);
             }
             else
-                throw new SmartDataWithSuchIdExists();
+                throw new SmartDataWithSuchIdExists($"{type} with id {data.Id} ({data.Name}) exists");
         }
 
         private void Add(SmartType type, SmartGenericJsonData data)
@@ -94,25 +135,30 @@ namespace WDE.SmartScriptEditor.Data
             ActualAdd(type, data);
         }
 
-        public SmartGenericJsonData GetRawData(SmartType type, int id)
+        public void Reload(SmartType smartType)
         {
-            if (!_smartIdData[type].ContainsKey(id))
-                throw new NullReferenceException();
-
-            return _smartIdData[type][id];
-        }
-        
-        public SmartGenericJsonData GetDataByName(SmartType type, string name)
-        {
-            if (!_smartNameData[type].ContainsKey(name))
-                throw new NullReferenceException();
-
-            return _smartNameData[type][name];
+            smartIdData.Remove(smartType);
+            smartNameData.Remove(smartType);
+            switch (smartType)
+            {
+                case SmartType.SmartEvent:
+                    Load(smartType, provider.GetEvents());
+                    break;
+                case SmartType.SmartAction:
+                    Load(smartType, provider.GetActions());
+                    break;
+                case SmartType.SmartTarget:
+                case SmartType.SmartSource:
+                    smartIdData.Remove(SmartType.SmartSource);
+                    smartNameData.Remove(SmartType.SmartSource);
+                    Load(smartType, provider.GetTargets());
+                    break;
+            }
         }
     }
 
     [Serializable]
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    [ExcludeFromCodeCoverage]
     public class SmartDataWithSuchIdExists : Exception
     {
         public SmartDataWithSuchIdExists()

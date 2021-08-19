@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 using WDE.Common.Parameters;
 
@@ -27,7 +23,10 @@ namespace WDE.Parameters.Models
         public string Prefix { get; set; }
 
         [JsonProperty(PropertyName = "values")]
-        public Dictionary<int, SelectOption> Values { get; set; }
+        public Dictionary<long, SelectOption>? Values { get; set; }
+
+        [JsonProperty(PropertyName = "stringValues")]
+        public Dictionary<string, SelectOption>? StringValues { get; set; }
 
         public override string ToString()
         {

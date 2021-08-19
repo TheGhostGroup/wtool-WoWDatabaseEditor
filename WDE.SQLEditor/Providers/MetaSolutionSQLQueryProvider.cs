@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WDE.Common.Solution;
@@ -11,9 +9,20 @@ namespace WDE.SQLEditor.Providers
     [AutoRegister]
     public class MetaSolutionSQLQueryProvider : ISolutionItemSqlProvider<MetaSolutionSQL>
     {
-        public string GenerateSql(MetaSolutionSQL item)
+        private readonly Lazy<ISolutionItemSqlGeneratorRegistry> sqlGeneratorRegistry;
+
+        public MetaSolutionSQLQueryProvider(Lazy<ISolutionItemSqlGeneratorRegistry> sqlGeneratorRegistry)
         {
-            return item.GetSql();
+            this.sqlGeneratorRegistry = sqlGeneratorRegistry;
+        }
+        
+        public async Task<string> GenerateSql(MetaSolutionSQL item)
+        {
+            StringBuilder sb = new();
+            foreach (var subitem in item.ItemsToGenerate)
+                sb.AppendLine(await sqlGeneratorRegistry.Value.GenerateSql(subitem));
+            
+            return sb.ToString();
         }
     }
 }

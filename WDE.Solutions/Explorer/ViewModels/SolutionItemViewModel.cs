@@ -1,82 +1,120 @@
-﻿using Prism.Commands;
-using Prism.Mvvm;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
+using System.Diagnostics;
+using Prism.Mvvm;
 using WDE.Common;
 using WDE.Common.Solution;
+using WDE.Common.Types;
 
 namespace WDE.Solutions.Explorer.ViewModels
 {
     public class SolutionItemViewModel : BindableBase
     {
-        private ISolutionItemNameRegistry itemNameRegistry;
+        private readonly ISolutionItemIconRegistry iconRegistry;
+        private readonly ISolutionItemNameRegistry itemNameRegistry;
 
-        private readonly ISolutionItem _item;
-        private readonly SolutionItemViewModel _parent;
+        private readonly Dictionary<ISolutionItem, SolutionItemViewModel> itemToViewmodel;
+        private bool isExpanded;
 
-        private readonly ObservableCollection<SolutionItemViewModel> _children;
-        public ObservableCollection<SolutionItemViewModel> Children => _children;
+        private bool isSelected;
 
-        private Dictionary<ISolutionItem, SolutionItemViewModel> _itemToViewmodel;
-
-        public string Name => itemNameRegistry.GetName(_item);
-        public string ExtraId => _item.ExtraId;
-        public bool IsContainer => _item.IsContainer;
-        public bool IsExportable => _item.IsExportable;
-        public ISolutionItem Item => _item;
-        public SolutionItemViewModel Parent => _parent;
-
-        private bool _isSelected;
-
-        public bool IsSelected
-        {
-            get { return _isSelected; }
-            set { SetProperty(ref _isSelected, value); }
-        }
-
-        public SolutionItemViewModel(ISolutionItemNameRegistry itemNameRegistry, ISolutionItem item) : this(itemNameRegistry, item, null)
+        public SolutionItemViewModel(ISolutionItemIconRegistry iconRegistry, ISolutionItemNameRegistry itemNameRegistry, ISolutionItem item) : this(iconRegistry, itemNameRegistry,
+            item, null)
         {
         }
 
-        public SolutionItemViewModel(ISolutionItemNameRegistry itemNameRegistry, ISolutionItem item, SolutionItemViewModel parent)
+        public SolutionItemViewModel(ISolutionItemIconRegistry iconRegistry, ISolutionItemNameRegistry itemNameRegistry, ISolutionItem item, SolutionItemViewModel? parent)
         {
+            this.iconRegistry = iconRegistry;
             this.itemNameRegistry = itemNameRegistry;
-            _item = item;
-            _parent = parent;
+            Item = item;
+            Parent = parent;
+            Icon = iconRegistry.GetIcon(item);
 
-            _itemToViewmodel = new Dictionary<ISolutionItem, SolutionItemViewModel>();
+            itemToViewmodel = new Dictionary<ISolutionItem, SolutionItemViewModel>();
 
             if (item.Items != null)
             {
-                _children = new ObservableCollection<SolutionItemViewModel>();
+                Children = new ObservableCollection<SolutionItemViewModel>();
 
-                foreach (object obj in item.Items)
-                    AddItem(obj as ISolutionItem);
+                foreach (ISolutionItem obj in item.Items)
+                    AddItem(obj);
 
                 item.Items.CollectionChanged += (sender, args) =>
                 {
                     if (args.NewItems != null)
-                        foreach (object obj in args.NewItems)
-                            AddItem(obj as ISolutionItem);
+                    {
+                        var i = 0;
+                        foreach (ISolutionItem obj in args.NewItems)
+                            AddItem(obj, args.NewStartingIndex + i);
+                    }
 
                     if (args.OldItems != null)
-                        foreach (object obj in args.OldItems)
+                    {
+                        foreach (ISolutionItem obj in args.OldItems)
                         {
-                            var solutionItem = obj as ISolutionItem;
-                            _children.Remove(_itemToViewmodel[solutionItem]);
-                            _itemToViewmodel.Remove(solutionItem);
+                            ISolutionItem solutionItem = obj;
+                            Children.Remove(itemToViewmodel[solutionItem]);
+                            itemToViewmodel.Remove(solutionItem);
                         }
+                    }
                 };
             }
         }
 
-        private void AddItem(ISolutionItem item)
+        public ObservableCollection<SolutionItemViewModel>? Children { get; }
+
+        public ImageUri Icon { get; set; }
+        public string Name => itemNameRegistry.GetName(Item);
+        public string? ExtraId => Item.ExtraId;
+        public bool IsContainer => Item.IsContainer;
+        public bool IsExportable => Item.IsExportable;
+        public ISolutionItem Item { get; }
+
+        public SolutionItemViewModel? Parent { get; set; }
+
+        public bool IsSelected
         {
-            var viewModel = new SolutionItemViewModel(itemNameRegistry, item, this);
-            _children.Add(viewModel);
-            _itemToViewmodel.Add(item, viewModel);
+            get => isSelected;
+            set => SetProperty(ref isSelected, value);
+        }
+
+        public bool IsExpanded
+        {
+            get => isExpanded;
+            set => SetProperty(ref isExpanded, value);
+        }
+
+        private void AddItem(ISolutionItem item, int index = -1)
+        {
+            Debug.Assert(Children != null);
+            if (!itemToViewmodel.TryGetValue(item, out SolutionItemViewModel? viewModel))
+            {
+                viewModel = new SolutionItemViewModel(iconRegistry, itemNameRegistry, item, this);
+                itemToViewmodel[item] = viewModel;
+            }
+            else
+                viewModel.Parent = this;
+
+            Children.Insert(index < 0 ? Children.Count : index, viewModel);
+        }
+
+        public void AddViewModel(SolutionItemViewModel sourceItem)
+        {
+            itemToViewmodel[sourceItem.Item] = sourceItem;
+        }
+
+        public void Refresh()
+        {
+            if (Children != null)
+            {
+                foreach (var child in Children)
+                {
+                    child.Refresh();
+                }
+            }
+            RaisePropertyChanged(nameof(ExtraId));
+            RaisePropertyChanged(nameof(Name));
         }
     }
 }

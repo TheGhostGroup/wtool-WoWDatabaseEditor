@@ -1,37 +1,24 @@
-﻿using Prism.Commands;
-using System;
-using WDE.Module.Attributes;
+﻿using Prism.Ioc;
 using WDE.Common.Managers;
 using WDE.Common.Solution;
+using WDE.Module.Attributes;
 using WDE.SQLEditor.ViewModels;
-using WDE.SQLEditor.Views;
 
 namespace WDE.SQLEditor.Providers
 {
     [AutoRegister]
     public class MetaSqlSolutionItemEditorProvider : ISolutionItemEditorProvider<MetaSolutionSQL>
     {
-        private readonly Lazy<ISolutionItemSqlGeneratorRegistry> sqlGeneratorsRegistry;
+        private readonly IContainerProvider containerProvider;
 
-        public MetaSqlSolutionItemEditorProvider(Lazy<ISolutionItemSqlGeneratorRegistry> sqlGeneratorsRegistry)
+        public MetaSqlSolutionItemEditorProvider(IContainerProvider containerProvider)
         {
-            this.sqlGeneratorsRegistry = sqlGeneratorsRegistry;
+            this.containerProvider = containerProvider;
         }
 
-        public Document GetEditor(MetaSolutionSQL item)
+        public IDocument GetEditor(MetaSolutionSQL item)
         {
-            var view = new SqlEditorView();
-            var vm = new SqlEditorViewModel(sqlGeneratorsRegistry.Value.GenerateSql(item as MetaSolutionSQL));
-            view.DataContext = vm;
-
-            Document editor = new Document();
-            editor.Title = "Sql output";
-            editor.Content = view;
-            editor.CanClose = true;
-            editor.Undo = new DelegateCommand(() => { }, () => false);
-            editor.Redo = new DelegateCommand(() => { }, () => false);
-
-            return editor;
+            return containerProvider.Resolve<SqlEditorViewModel>((typeof(MetaSolutionSQL), item));
         }
     }
 }

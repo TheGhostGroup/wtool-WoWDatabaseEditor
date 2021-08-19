@@ -1,56 +1,45 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 
-namespace WoWDatabaseEditor.ViewModels
+namespace WoWDatabaseEditorCore.ViewModels
 {
     public class MenuItemViewModel
     {
-        private readonly ICommand _command;
-
-        public MenuItemViewModel(Action action)
+        public MenuItemViewModel(Action action, string header)
         {
-            _command = new CommandViewModel(action);
+            Command = new CommandViewModel(action);
+            Header = header;
+            MenuItems = new ObservableCollection<MenuItemViewModel>();
         }
 
         public string Header { get; set; }
 
         public ObservableCollection<MenuItemViewModel> MenuItems { get; set; }
 
-        public ICommand Command
-        {
-            get
-            {
-                return _command;
-            }
-        }
+        public ICommand Command { get; }
     }
 
     public class CommandViewModel : ICommand
     {
-        private readonly Action _action;
+        private readonly Action action;
 
         public CommandViewModel(Action action)
         {
-            _action = action;
+            this.action = action;
         }
 
-        public void Execute(object o)
+        public void Execute(object? o)
         {
-            _action();
+            action();
         }
 
-        public bool CanExecute(object o)
+        public bool CanExecute(object? o)
         {
             return true;
         }
 
-        public event EventHandler CanExecuteChanged
+        public event EventHandler? CanExecuteChanged
         {
             add { }
             remove { }

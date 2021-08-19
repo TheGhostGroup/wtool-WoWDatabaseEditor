@@ -3,65 +3,107 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using WDE.Common.Parameters;
+using WDE.Parameters.Models;
 
 namespace WDE.SmartScriptEditor.Models
 {
     public abstract class SmartBaseElement : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public event Action BulkEditingStarted = delegate { };
+        public event Action<string> BulkEditingFinished = delegate { };
         public event EventHandler OnChanged = delegate { };
-        public List<DescriptionRule> DescriptionRules { get; set; }
-        private readonly Parameter[] _params;
-        public string ReadableHint;
-        public int Id { get; }
+        public event Action<SmartBaseElement, int, int> OnIdChanged = delegate { };
 
-        protected SmartBaseElement(int parametersCount, int id)
+        public virtual int LineId { get; set; }
+        private readonly ParameterValueHolder<long>[] @params;
+
+        private string? readableHint;
+        public string? ReadableHint
+        {
+            get => readableHint;
+            set
+            {
+                readableHint = value;
+                CallOnChanged();
+            }
+        }
+        
+        private int id;
+        public int Id
+        {
+            get => id;
+            set
+            {
+                var old = id;
+                id = value;
+                OnIdChanged?.Invoke(this, old, id);
+                OnPropertyChanged();
+            }
+        }
+        
+        public IList<object> Context { get; }
+        public List<DescriptionRule>? DescriptionRules { get; set; }
+        public abstract string Readable { get; }
+        public int ParametersCount { get; }
+        
+        protected SmartBaseElement(int parametersCount, int id, Func<SmartBaseElement, ParameterValueHolder<long>> paramCreator)
         {
             Id = id;
-            _params = new Parameter[parametersCount];
+            ParametersCount = parametersCount;
+            @params = new ParameterValueHolder<long>[parametersCount];
             for (int i = 0; i < parametersCount; ++i)
-                SetParameterObject(i, new NullParameter());
+            {
+                @params[i] = paramCreator(this);
+                @params[i].PropertyChanged += (_, _) => CallOnChanged();
+            }
 
-            OnChanged += (sender, args) => OnPropertyChanged("Readable");
+            Context = @params.Select(p => (object)p).ToList();
+            OnChanged += (sender, args) => OnPropertyChanged(nameof(Readable));
         }
 
-        public void SetParameterObject(int index, Parameter parameter)
+        public ParameterValueHolder<long> GetParameter(int index)
         {
-            if (_params[index] != null)
-                _params[index].OnValueChanged -= SmartBaseElement_OnValueChanged;
-            _params[index] = parameter;
-            parameter.OnValueChanged += SmartBaseElement_OnValueChanged;
+            return @params[index];
         }
 
-        public void SetParameter(int index, int value)
+        protected void CallOnChanged()
         {
-            _params[index].SetValue(value);
+            OnChanged(this, null!);
         }
 
-        public Parameter GetParameter(int index)
+        public IDisposable BulkEdit(string name)
         {
-            return _params[index];
+            return new BulkEditing(this, name);
         }
 
-        private void SmartBaseElement_OnValueChanged(object sender, ParameterChangedValue<int> e)
+        public virtual void InvalidateReadable()
         {
-            CallOnChanged();
+            OnPropertyChanged(nameof(Readable));
         }
 
-        protected void CallOnChanged(SmartBaseElement smartEvent = null, ParameterChangedValue<int> e = null)
-        {
-            OnChanged(this, null);
-        }
-
-        public abstract string Readable { get; }
-        public abstract int ParametersCount { get;}
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected void OnPropertyChanged([CallerMemberName]
+            string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private class BulkEditing : IDisposable
+        {
+            private readonly string name;
+            private readonly SmartBaseElement smartBaseElement;
+
+            public BulkEditing(SmartBaseElement smartBaseElement, string name)
+            {
+                this.smartBaseElement = smartBaseElement;
+                this.name = name;
+                this.smartBaseElement.BulkEditingStarted.Invoke();
+            }
+
+            public void Dispose()
+            {
+                smartBaseElement.BulkEditingFinished.Invoke(name);
+            }
         }
     }
 }

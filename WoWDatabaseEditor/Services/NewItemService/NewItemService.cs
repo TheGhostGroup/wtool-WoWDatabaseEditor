@@ -1,29 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
-
 using WDE.Common;
-using Prism.Ioc;
+using WDE.Common.Managers;
+using WDE.Module.Attributes;
 
-namespace WoWDatabaseEditor.Services.NewItemService
+namespace WoWDatabaseEditorCore.Services.NewItemService
 {
-    [WDE.Module.Attributes.AutoRegister]
+    [AutoRegister]
     public class NewItemService : INewItemService
     {
-        private readonly Lazy<INewItemWindowViewModel> viewModel;
+        private readonly Func<INewItemDialogViewModel> viewModel;
+        private readonly IWindowManager windowManager;
 
-        public NewItemService(Lazy<INewItemWindowViewModel> newItemWindowViewModel)
+        public NewItemService(Func<INewItemDialogViewModel> newItemWindowViewModel, IWindowManager windowManager)
         {
             viewModel = newItemWindowViewModel;
+            this.windowManager = windowManager;
         }
 
-        public ISolutionItem GetNewSolutionItem()
+        public async Task<ISolutionItem?> GetNewSolutionItem(bool showFolders)
         {
-            if (new NewItemWindow(viewModel.Value).ShowDialog().Value)
-                return viewModel.Value.SelectedPrototype.CreateSolutionItem();
+            var vm = viewModel();
+            vm.AllowFolders(showFolders);
+            if (await windowManager.ShowDialog(vm))
+            {
+                return await vm.CreateSolutionItem();
+            }
             return null;
         }
     }

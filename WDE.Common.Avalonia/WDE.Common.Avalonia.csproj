@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net5.0</TargetFramework>
+        <Configurations>Debug;Release</Configurations>
+        <Platforms>AnyCPU</Platforms>
+        <Nullable>enable</Nullable>
+        <WarningsAsErrors>nullable</WarningsAsErrors>
+    </PropertyGroup>
+    <Import Project="..\Avalonia.props" />
+    <ItemGroup>
+        <PackageReference Include="Avalonia.Controls.DataGrid" Version="$(AvaloniaVersion)" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\AvaloniaEdit\src\AvaloniaEdit\AvaloniaEdit.csproj" />
+      <ProjectReference Include="..\AvaloniaStyles\AvaloniaStyles.csproj" />
+      <ProjectReference Include="..\WDE.MVVM\WDE.MVVM.csproj" />
+      <ProjectReference Include="..\WDE.Parameters\WDE.Parameters.csproj" />
+      <ProjectReference Include="..\WoWDatabaseEditor.Common\WDE.Common\WDE.Common.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Remove="Assets\Fonts\FiraCode-Regular.ttf" />
+      <None Update="Resources\*.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\Syntax\sql.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\Syntax\sql.dark.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+</Project>
